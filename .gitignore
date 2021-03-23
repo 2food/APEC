@@ -1,5 +1,8 @@
 # My files
 videos/
+models/
+data/
+mmpose/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

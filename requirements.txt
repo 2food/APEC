@@ -1,0 +1,4 @@
+git+https://github.com/svenkreiss/poseval.git
+git+https://github.com/open-mmlab/mmdetection.git
+git+https://github.com/open-mmlab/mmpose.git
+git+https://github.com/open-mmlab/mmtracking.git
