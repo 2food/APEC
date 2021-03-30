@@ -100,7 +100,9 @@ def pick_track_result(prev_res, this_res):
     if res.shape[0] > 1:
         return closest(prev_res, res)
     else:
-        return this_res['bbox_results'][0][0,:4]
+        res = this_res['bbox_results'][0][0]
+        res = res[:4]
+        return res
 
 def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, save_out=None, only_first=None):
     if save_out is not None:
@@ -113,7 +115,7 @@ def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, save_out=None, 
         
     bbox_res = np.zeros((1,4))
     for frame_id in trange(frame_count):
-        img = img_as_float(vid[frame_id])
+        img = vid[frame_id]
         
         track_results = inf_fun(track_model, img, frame_id)
         left, top, right, bot =  pick_track_result(bbox_res[-1], track_results)
