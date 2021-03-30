@@ -78,7 +78,7 @@ def _inference_single_pose_model(model,
     test_pipeline = Compose(test_pipeline)
 
     assert len(bbox) in [4, 5]
-    center, scale = box2cs(cfg, bbox)
+    center, scale = box2cs(bbox, cfg.data_cfg['image_size'])
 
     flip_pairs = None
     if dataset in ('TopDownCocoDataset', 'TopDownOCHumanDataset'):

@@ -7,7 +7,7 @@ from utils import makedirs_ifno
 from tqdm.auto import trange
 from mmtrack.apis import inference_vid, inference_mot
 from torch import nn
-
+from skimage import img_as_float
 
 def xyxy2xywh(bbox_xyxy):
     """Transform the bbox format from x1y1x2y2 to xywh.
@@ -39,7 +39,7 @@ def xywh2xyxy(bbox_xywh):
     return bbox_xyxy
 
 
-def box2cs(cfg, box):
+def box2cs(box, input_size):
     """This encodes bbox(x,y,w,h) into (center, scale)
     Args:
         x, y, w, h
@@ -50,7 +50,6 @@ def box2cs(cfg, box):
     """
 
     x, y, w, h = box[:4]
-    input_size = cfg.data_cfg['image_size']
     aspect_ratio = input_size[0] / input_size[1]
     center = np.array([x + w * 0.5, y + h * 0.5], dtype=np.float32)
 
@@ -95,13 +94,13 @@ def bbox_crop(img, bbox):
 def closest(true, guesses):
     return guesses[np.abs(guesses - true).sum(axis=1).argmin()]
 
-def pick_track_result(prev_res, res):
-    res = res['track_results'][0]
+def pick_track_result(prev_res, this_res):
+    res = this_res['track_results'][0]
     res = res[:,1:-1]
     if res.shape[0] > 1:
         return closest(prev_res, res)
     else:
-        return res[0]
+        return this_res['bbox_results'][0][0,:4]
 
 def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, save_out=None, only_first=None):
     if save_out is not None:
@@ -114,7 +113,8 @@ def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, save_out=None, 
         
     bbox_res = np.zeros((1,4))
     for frame_id in trange(frame_count):
-        img = vid[frame_id]
+        img = img_as_float(vid[frame_id])
+        
         track_results = inf_fun(track_model, img, frame_id)
         left, top, right, bot =  pick_track_result(bbox_res[-1], track_results)
         
