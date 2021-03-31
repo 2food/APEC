@@ -2,7 +2,6 @@ from torchvision.datasets import ImageFolder
 from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
 from typing import Any, Callable, Optional
 
-
 class VideoFrameFolder(ImageFolder):
     """A data loader for sequential images where the samples are arranged in this way: ::
 

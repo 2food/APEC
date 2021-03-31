@@ -4,10 +4,11 @@ from PIL import Image
 import mmcv
 from mmcv.video import VideoReader
 from utils import makedirs_ifno
-from tqdm.auto import trange
+from tqdm.notebook import trange
 from mmtrack.apis import inference_vid, inference_mot
 from torch import nn
 from skimage import img_as_float
+from typing import Dict
 
 def xyxy2xywh(bbox_xyxy):
     """Transform the bbox format from x1y1x2y2 to xywh.
@@ -60,9 +61,7 @@ def box2cs(box, input_size):
 
     # pixel std is 200.0
     scale = np.array([w / 200.0, h / 200.0], dtype=np.float32)
-
-    scale = scale * 1.25
-
+    
     return center, scale
 
 
@@ -94,10 +93,10 @@ def bbox_crop(img, bbox):
 def closest(true, guesses):
     return guesses[np.abs(guesses - true).sum(axis=1).argmin()]
 
-def pick_track_result(prev_res, this_res):
+def pick_track_result(prev_res, this_res : Dict):
     res = this_res['track_results'][0]
     res = res[:,1:-1]
-    if res.shape[0] > 1:
+    if 'track_results' in this_res and res.shape[0] > 1:
         return closest(prev_res, res)
     else:
         res = this_res['bbox_results'][0][0]
