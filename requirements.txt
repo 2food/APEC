@@ -1,4 +1,4 @@
-mmcv-full==1.2.4 -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
+mmcv-full==1.2.4 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.7.0/index.html
 poseval@git+https://github.com/svenkreiss/poseval.git
 mmpycocotools
 mmcls
@@ -35,6 +35,8 @@ pandas
 scipy
 xmltodict
 dataclasses
+networkx
+imageio
 mmdet@git+https://github.com/open-mmlab/mmdetection.git@v2.8.0
 mmpose@git+https://github.com/open-mmlab/mmpose.git
 mmtrack@git+https://github.com/open-mmlab/mmtracking.git@v0.5.1

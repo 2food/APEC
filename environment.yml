@@ -5,12 +5,13 @@ channels:
   - defaults
 dependencies:
   - python=3.6
-  - cudatoolkit=11.0.221
+  - cudatoolkit=10.1
   - pytorch=1.7.0
   - torchvision
   - opencv=4.5.1
   - pyopengl=3.1.5
   - jupyterlab
+  - ipywidgets
   - numpy
   - cython
   - pip
