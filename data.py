@@ -1,6 +1,9 @@
 from torchvision.datasets import ImageFolder
 from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
+from torch.utils.data import Dataset
 from typing import Any, Callable, Optional
+import mmcv
+from mmcv import VideoReader
 
 class VideoFrameFolder(ImageFolder):
     """A data loader for sequential images where the samples are arranged in this way: ::
@@ -46,3 +49,30 @@ class VideoFrameFolder(ImageFolder):
         # sort files, first by video then numerically
         self.imgs.sort(key=lambda x: (
             x[1], int(x[0].split('/')[-1].split('.')[0])))
+
+        
+class ClimbingDataset(Dataset):
+    # look at MEVA/meva/dataloaders/dataset_2d.py for inspo
+    
+    video_names = ['IMG_2139.MOV', 
+                   'IMG_2140.MOV',
+                   'IMG_2141.MOV',
+                   'IMG_2142.MOV',
+                   'IMG_2320.mov',
+                   'VID_20210123_091729.mp4',
+                   'VID_20210123_104706.mp4',
+                   'VID_20210123_110129.mp4',
+                   'VID_20210123_111337.mp4',
+                   'VID_20210123_111921.mp4']
+    test_seqs = dict([(v,slice((i*12)*30, (i*12+6)*30)) for i,v in enumerate(video_names)])
+    val_seqs = dict([(v,slice((i*12+6)*30, (i*12+12)*30)) for i,v in enumerate(video_names)])
+    
+    def __init(self, 
+               folder: str):
+        pass
+    
+    def __len__(self):
+        pass
+
+    def __getitem__(self, index):
+        pass
