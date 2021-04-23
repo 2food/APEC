@@ -39,6 +39,22 @@ def xywh2xyxy(bbox_xywh):
     bbox_xyxy[:, 3] = bbox_xyxy[:, 3] + bbox_xyxy[:, 1] - 1
     return bbox_xyxy
 
+def cxcywh2xyxy(bbox_cxcywh):
+    """Transform the bbox format from xywh to x1y1x2y2.
+    Agrs: 
+        bbox_cxcywh (ndarray): Bounding boxes,
+            shaped (n, 4) or (n, 5). (center x, center y, width height, [score])
+    Returns:
+        np.ndarray: Bounding boxes, shaped (n, 4) or (n, 5). (left, top, right, bottom, [score]).
+    """
+    bbox_xyxy = bbox_cxcywh.copy()
+    bbox_xyxy[:, 0] = bbox_cxcywh[:,0] - bbox_cxcywh[:,2]/2
+    bbox_xyxy[:, 1] = bbox_cxcywh[:,1] - bbox_cxcywh[:,3]/2
+    bbox_xyxy[:, 2] = bbox_cxcywh[:,0] + bbox_cxcywh[:,2]/2
+    bbox_xyxy[:, 3] = bbox_cxcywh[:,1] + bbox_cxcywh[:,3]/2
+    return bbox_xyxy
+    
+
 
 def box2cs(box, input_size):
     """This encodes bbox(x,y,w,h) into (center, scale)
@@ -93,40 +109,29 @@ def bbox_crop(img, bbox):
 def closest(true, guesses):
     return guesses[np.abs(guesses - true).sum(axis=1).argmin()]
 
-def pick_track_result(prev_res, this_res : Dict):
-    res = this_res['track_results'][0]
-    res = res[:,1:-1]
-    if 'track_results' in this_res and res.shape[0] > 1:
-        return closest(prev_res, res)
-    else:
-        res = this_res['bbox_results'][0][0]
-        res = res[:4]
+def format_track_result(this_res : Dict):
+    if 'track_results' in this_res:
+        bbs = this_res['track_results'][0]
+        res = {}
+        for bb in bbs:
+            idx = int(bb[0])
+            res[idx] = bb[1:]
         return res
+    else:
+        return {}
 
-def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, save_out=None, only_first=None):
-    if save_out is not None:
-        makedirs_ifno([save_out]) # save_out needs ending /
-        
+def _detect(track_model : nn.Module, vid : VideoReader, inf_fun, only_first=None):
     if only_first is not None:
         frame_count = only_first  
     else:
         frame_count = vid.frame_cnt
         
-    bbox_res = np.zeros((1,4))
+    bbox_res = []
     for frame_id in trange(frame_count):
         img = vid[frame_id]
-        
         track_results = inf_fun(track_model, img, frame_id)
-        left, top, right, bot =  pick_track_result(bbox_res[-1], track_results)
-        
-        if save_out is not None:
-            new_frame = track_model.show_result(img, track_results['track_results'])
-            new_frame = bbox_crop(img, (left, top, right, bot))
-            mmcv.imwrite(new_frame, f'{save_out}{frame_id:06d}.jpg')
-
-        bbox_res = np.concatenate((bbox_res, np.array([[left, top, right, bot]])))
-
-    bbox_res = bbox_res[1:] #discard initial zeros
+        results = format_track_result(track_results)
+        bbox_res.append(results)
     
     return bbox_res
     
@@ -135,3 +140,17 @@ def detect_mot(track_model : nn.Module, vid : VideoReader, **kwargs):
 
 def detect_vid(track_model : nn.Module, vid : VideoReader, **kwargs):
     return _detect(track_model, vid, inference_vid, **kwargs)
+
+
+def seperate_tracks(bboxes):
+    highest_idx = max([max(b.keys()) for b in bboxes])
+    tracks = np.zeros((len(bboxes), highest_idx+1, 5))
+    for i, b in enumerate(bboxes):
+        for k in b.keys():
+            tracks[i,k] = b[k]
+    return tracks
+
+def get_tracks_with_contigous(tracks, n):
+    nonzero = np.all(tracks != 0.0, axis=2)
+    return tracks[:,nonzero.sum(axis=0)>n]
+    

@@ -15,7 +15,8 @@ from bbox import box2cs, xyxy2xywh, xywh2xyxy
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-
+from meva.utils.renderer import Renderer
+from meva.utils.demo_utils import convert_crop_cam_to_orig_img
 
 
 class LoadImage:
@@ -290,3 +291,32 @@ def get_vertices(model, pred_result):
                           global_orient=torch.Tensor(pred_result['pose'][:, :1]).cuda(),
                           pose2rot=False)
     return smpl_out.vertices.detach().cpu().numpy()
+
+def render_mesh(img, verts, orig_cam):
+    orig_height, orig_width, _ = img.shape
+    renderer = Renderer(resolution=(orig_width, orig_height), orig_img=True)
+    mesh_img = renderer.render(img, verts, orig_cam)
+    return mesh_img
+
+def predict_mesh(hmr_model, img, frame_bbox):
+    hmr_model.eval()
+    bbox_xywh = xyxy2xywh(frame_bbox[np.newaxis])[0]
+    person_results = [dict(bbox=bbox_xywh)]
+    _, res = inference_mesh_model(hmr_model, 
+                                  img, 
+                                  person_results,
+                                  format='xywh')
+    verts = get_vertices(hmr_model, res)
+
+    orig_height, orig_width, _ = img.shape
+    center, scale = box2cs(bbox_xywh, (orig_height, orig_width))
+    
+    bbox_csh = np.concatenate((center, scale))[np.newaxis]
+    
+    bbox_csh[:,2] = bbox_xywh[3]
+    
+    orig_cam = convert_crop_cam_to_orig_img(res['cam'], bbox_csh, orig_width, orig_height)
+    res['verts'] = verts
+    res['orig_cam'] = orig_cam
+    
+    return res
