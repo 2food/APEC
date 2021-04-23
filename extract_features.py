@@ -4,7 +4,7 @@ sys.path.append(os.getcwd())
 from meva.lib.spin import get_pretrained_hmr
 import mmcv
 import numpy as np
-import tqdm
+from tqdm import tqdm
 import argparse
 
 def main(args):
