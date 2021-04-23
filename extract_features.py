@@ -1,13 +1,17 @@
+import sys
+import os
+sys.path.append(os.getcwd())
 from meva.lib.spin import get_pretrained_hmr
 import mmcv
 import numpy as np
 import tqdm
+import argparse
 
 def main(args):
 
     vid_folder = args.vid_folder
     vid_name = args.vid_name
-    out_folder = args.out_fodler
+    out_folder = args.out_folder
 
     stripped_name = vid_name.split('.')[0]
     vid_file = f'{vid_folder}/{vid_name}'
