@@ -3,6 +3,8 @@ videos/
 models/
 data/
 mmpose/
+results/
+meva/lib/__pycache__/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

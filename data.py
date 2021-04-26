@@ -4,11 +4,12 @@ import torch
 from torch.utils.data import Dataset
 from typing import Any, Callable, Optional
 import mmcv
-from mmcv import VideoReader
+import os
 import xml.etree.ElementTree as ET
 import numpy as np
 from skimage.util import view_as_windows
 from meva.utils import image_utils, kp_utils
+from tqdm.auto import tqdm
 
 
 class VideoFrameFolder(ImageFolder):
@@ -71,27 +72,50 @@ def read_cvat_anno(file):
     return data
 
 
+# def get_climb_joint_names():
+#     return [
+#         'nose',
+#         'rshoulder',
+#         'relbow',
+#         'rwrist',
+#         'rhand',
+#         'lshoulder',
+#         'lelbow',
+#         'lwrist',
+#         'lhand',
+#         'rhip',
+#         'rknee',
+#         'rankle',
+#         'rfoot',
+#         'lhip',
+#         'lknee',
+#         'lankle',
+#         'lfoot',
+#         'rear',
+#         'lear'
+#     ]
+
 def get_climb_joint_names():
     return [
-        'nose',
-        'rshoulder',
-        'relbow',
-        'rwrist',
-        'rhand',
-        'lshoulder',
-        'lelbow',
-        'lwrist',
-        'lhand',
-        'rhip',
-        'rknee',
-        'rankle',
-        'rfoot',
-        'lhip',
-        'lknee',
-        'lankle',
-        'lfoot',
-        'rear',
-        'lear'
+        'OP Nose',
+        'OP RShoulder',
+        'OP RElbow',
+        'OP RWrist',
+        'OP RHand',
+        'OP LShoulder',
+        'OP LElbow',
+        'OP LWrist',
+        'OP LHand',
+        'OP RHip',
+        'OP RKnee',
+        'OP RAnkle',
+        'OP RBigToe',
+        'OP LHip',
+        'OP LKnee',
+        'OP LAnkle',
+        'OP LBigToe',
+        'OP REar',
+        'OP LEar'
     ]
 
 
@@ -120,6 +144,7 @@ class ClimbingDataset(Dataset):
                  video_folder: str,
                  anno_folder: str,
                  mode: str,
+                 feat_folder=None,
                  seq_len=90,
                  overlap=0):
         super().__init__()
@@ -127,6 +152,21 @@ class ClimbingDataset(Dataset):
                      for n in self.video_names]
         self.labels = [read_cvat_anno(f'{anno_folder}/{n}.xml')
                        for n in self.stripped_names]
+
+        self.features = []
+        if feat_folder is not None:
+            print(f'Reading features for ...', end=' ')
+            for i, vid_name in enumerate(self.stripped_names):
+                features = []
+                folder = f'{feat_folder}/{vid_name}'
+                print(vid_name, end=' ')
+                for file in os.listdir(f'{feat_folder}/{vid_name}'):
+                    res = np.load(f'{folder}/{file}', allow_pickle=True)
+                    features.append(res.item()['features'])
+                self.features.append(np.stack(features))
+
+        self.bboxes = [image_utils.get_bbox_from_kp2d(
+            l).T for l in self.labels]
         self.seq_len = seq_len
         self.overlap = overlap
 
@@ -147,24 +187,49 @@ class ClimbingDataset(Dataset):
         return self.len
 
     def __getitem__(self, index):
-        vid_idx = np.argmax(index < np.cumsum(self.seq_lengths))
-        seq_idx = index - self.seq_lengths[:vid_idx].sum()
-        seq = self.seqs[vid_idx][seq_idx]
+        vid_idx, frames = self.get_indices(index)
+        return self.features[vid_idx][frames]
+
+    def get(self, index):
+        vid_idx, frames = self.get_indices(index)
+
         vid = self.vids[vid_idx]
-        frames = slice(seq[0], seq[-1] + 1)
 
-        features = torch.stack(
-            [image_utils.convert_cvimg_to_tensor(img) for img in vid[frames]])
-
+        bboxes = self.bboxes[vid_idx][frames]
         labels = self.labels[vid_idx][frames]
         # add confidence of 1
         labels = np.concatenate(
             (labels, np.ones((labels.shape[0], 19, 1))), axis=2)
-        kp_utils.get_climb_joint_names = get_climb_joint_names
-        kp_2d = kp_utils.convert_kps(labels, 'climb', 'spin')
 
-        target = {'features': features,
-                  'kp_2d': labels,
-                  'vid_name': self.stripped_names[vid_idx],
-                  'frames': seq}
+        # crop and transfrom keypoints
+        raw_imgs = np.array(vid[frames])
+        crop_res = [image_utils.get_single_image_crop_wtrans(
+            img, bbox, kps, scale=1.0) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
+        norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
+        norm_imgs, kp_2d = torch.stack(norm_imgs), np.stack(kp_2d)
+        trans, inv_trans = np.stack(trans), np.stack(inv_trans)
+
+        # convert keypoints to spin format
+        kp_utils.get_climb_joint_names = get_climb_joint_names
+        kp_2d = kp_utils.convert_kps(kp_2d, 'climb', 'spin')
+
+        features = self.features[vid_idx][frames]
+
+        target = {'raw_imgs': raw_imgs,
+                  'norm_imgs': norm_imgs,
+                  'features': features,
+                  'climb_labels': labels,
+                  'kp_2d': kp_2d,
+                  'vid_idx': vid_idx,
+                  'frames': frames,
+                  'bboxes': bboxes,
+                  'trans': trans,
+                  'inv_trans': inv_trans}
         return target
+
+    def get_indices(self, index):
+        vid_idx = np.argmax(index < np.cumsum(self.seq_lengths))
+        seq_idx = index - self.seq_lengths[:vid_idx].sum()
+        seq = self.seqs[vid_idx][seq_idx]
+        frames = slice(seq[0], seq[-1] + 1)
+        return vid_idx, frames

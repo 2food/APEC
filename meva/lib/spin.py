@@ -16,6 +16,7 @@ from meva.utils.transform_utils import (
     convert_orth_6d_to_mat, compute_orth6d_from_rotation_matrix
 )
 
+
 class Bottleneck(nn.Module):
     """
     Redefinition of Bottleneck residual block
@@ -63,6 +64,7 @@ class HMR(nn.Module):
     """
     SMPL Iterative Regressor with ResNet50 backbone
     """
+
     def __init__(self, block, layers, smpl_mean_params):
         self.inplanes = 64
         super(HMR, self).__init__()
@@ -104,7 +106,8 @@ class HMR(nn.Module):
 
         mean_params = np.load(smpl_mean_params)
         init_pose = torch.from_numpy(mean_params['pose'][:]).unsqueeze(0)
-        init_shape = torch.from_numpy(mean_params['shape'][:].astype('float32')).unsqueeze(0)
+        init_shape = torch.from_numpy(
+            mean_params['shape'][:].astype('float32')).unsqueeze(0)
         init_cam = torch.from_numpy(mean_params['cam']).unsqueeze(0)
         self.register_buffer('init_pose', init_pose)
         self.register_buffer('init_shape', init_shape)
@@ -194,7 +197,8 @@ class HMR(nn.Module):
 
         pred_keypoints_2d = projection(pred_joints, pred_cam)
 
-        pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
+        pose = rotation_matrix_to_angle_axis(
+            pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
 
         output = [{
             'theta': torch.cat([pred_cam, pose, pred_shape], dim=1),
@@ -207,6 +211,7 @@ class HMR(nn.Module):
             return xf, output
         else:
             return output
+
 
 class Regressor(nn.Module):
     def __init__(self, smpl_mean_params=SMPL_MEAN_PARAMS):
@@ -233,13 +238,12 @@ class Regressor(nn.Module):
 
         mean_params = np.load(smpl_mean_params)
         init_pose = torch.from_numpy(mean_params['pose'][:]).unsqueeze(0)
-        init_shape = torch.from_numpy(mean_params['shape'][:].astype('float32')).unsqueeze(0)
+        init_shape = torch.from_numpy(
+            mean_params['shape'][:].astype('float32')).unsqueeze(0)
         init_cam = torch.from_numpy(mean_params['cam']).unsqueeze(0)
         self.register_buffer('init_pose', init_pose)
         self.register_buffer('init_shape', init_shape)
         self.register_buffer('init_cam', init_cam)
-
-
 
     def forward(self, x, init_pose=None, init_shape=None, init_cam=None, n_iter=3, J_regressor=None):
         batch_size = x.shape[0]
@@ -264,7 +268,6 @@ class Regressor(nn.Module):
             pred_shape = self.decshape(xc) + pred_shape
             pred_cam = self.deccam(xc) + pred_cam
 
-
         pred_rotmat = rot6d_to_rotmat(pred_pose).reshape(batch_size, 24, 3, 3)
 
         ############### SMOOTH ###############
@@ -283,20 +286,22 @@ class Regressor(nn.Module):
         pred_joints = pred_output.joints
 
         if J_regressor is not None:
-            J_regressor_batch = J_regressor[None, :].expand(pred_vertices.shape[0], -1, -1).to(pred_vertices.device)
+            J_regressor_batch = J_regressor[None, :].expand(
+                pred_vertices.shape[0], -1, -1).to(pred_vertices.device)
             pred_joints = torch.matmul(J_regressor_batch, pred_vertices)
             pred_joints = pred_joints[:, H36M_TO_J14, :]
 
         pred_keypoints_2d = projection(pred_joints, pred_cam)
 
-        pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
+        pose = rotation_matrix_to_angle_axis(
+            pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
 
         output = [{
-            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),
-            'verts'  : pred_vertices,
-            'kp_2d'  : pred_keypoints_2d,
-            'kp_3d'  : pred_joints,
-            'rotmat' : pred_rotmat
+            'theta': torch.cat([pred_cam, pose, pred_shape], dim=1),
+            'verts': pred_vertices,
+            'kp_2d': pred_keypoints_2d,
+            'kp_3d': pred_joints,
+            'rotmat': pred_rotmat
         }]
         return output
 
@@ -321,7 +326,8 @@ def projection(pred_joints, pred_camera):
     batch_size = pred_joints.shape[0]
     camera_center = torch.zeros(batch_size, 2)
     pred_keypoints_2d = perspective_projection(pred_joints,
-                                               rotation=torch.eye(3).unsqueeze(0).expand(batch_size, -1, -1).to(pred_joints.device),
+                                               rotation=torch.eye(3).unsqueeze(0).expand(
+                                                   batch_size, -1, -1).to(pred_joints.device),
                                                translation=pred_cam_t,
                                                focal_length=5000.,
                                                camera_center=camera_center)
@@ -343,17 +349,17 @@ def perspective_projection(points, rotation, translation,
     """
     batch_size = points.shape[0]
     K = torch.zeros([batch_size, 3, 3], device=points.device)
-    K[:,0,0] = focal_length
-    K[:,1,1] = focal_length
-    K[:,2,2] = 1.
-    K[:,:-1, -1] = camera_center
+    K[:, 0, 0] = focal_length
+    K[:, 1, 1] = focal_length
+    K[:, 2, 2] = 1.
+    K[:, :-1, -1] = camera_center
 
     # Transform points
     points = torch.einsum('bij,bkj->bki', rotation, points)
     points = points + translation.unsqueeze(1)
 
     # Apply perspective distortion
-    projected_points = points / points[:,:,-1].unsqueeze(-1)
+    projected_points = points / points[:, :, -1].unsqueeze(-1)
 
     # Apply camera intrinsics
     projected_points = torch.einsum('bij,bkj->bki', K, projected_points)

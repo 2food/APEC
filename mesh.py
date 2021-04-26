@@ -11,7 +11,7 @@ from mmpose.datasets.pipelines import Compose
 from mmpose.models import build_posenet
 from mmpose.utils.hooks import OutputHook
 
-from bbox import box2cs, xyxy2xywh, xywh2xyxy
+from bbox import box2cs, xyxy2xywh, xywh2xyxy, cxcywh2cs
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
@@ -194,14 +194,14 @@ def _inference_single_pose_model(model,
             img_metas=data['img_metas'],
             return_loss=False,
             return_heatmap=return_heatmap)
-    
-    # to understand results look at https://github.com/open-mmlab/mmpose/blob/master/mmpose/models/detectors/mesh.py 
+
+    # to understand results look at https://github.com/open-mmlab/mmpose/blob/master/mmpose/models/detectors/mesh.py
     out = dict(joints_3d=result[0][0],
-              pose=result[0][1][0],
-              shape=result[0][1][1],
-              cam=result[0][2],
-              all_boxes=result[1],
-              image_path=result[2])
+               pose=result[0][1][0],
+               shape=result[0][1][1],
+               cam=result[0][2],
+               all_boxes=result[1],
+               image_path=result[2])
     return out
 
 
@@ -271,11 +271,10 @@ def inference_mesh_model(model,
                 dataset,
                 return_heatmap=return_heatmap)
 
-            #if return_heatmap:
+            # if return_heatmap:
             #    h.layer_outputs['heatmap'] = heatmap
 
             returned_outputs['layer_outputs'] = h.layer_outputs
-
 
             if format == 'xywh':
                 person_result['bbox'] = bbox_xyxy[0]
@@ -287,10 +286,13 @@ def inference_mesh_model(model,
 
 def get_vertices(model, pred_result):
     smpl_out = model.smpl(betas=torch.Tensor(pred_result['shape']).cuda(),
-                          body_pose=torch.Tensor(pred_result['pose'][:, 1:]).cuda(),
-                          global_orient=torch.Tensor(pred_result['pose'][:, :1]).cuda(),
+                          body_pose=torch.Tensor(
+                              pred_result['pose'][:, 1:]).cuda(),
+                          global_orient=torch.Tensor(
+                              pred_result['pose'][:, :1]).cuda(),
                           pose2rot=False)
     return smpl_out.vertices.detach().cpu().numpy()
+
 
 def render_mesh(img, verts, orig_cam):
     orig_height, orig_width, _ = img.shape
@@ -298,25 +300,37 @@ def render_mesh(img, verts, orig_cam):
     mesh_img = renderer.render(img, verts, orig_cam)
     return mesh_img
 
+
 def predict_mesh(hmr_model, img, frame_bbox):
     hmr_model.eval()
     bbox_xywh = xyxy2xywh(frame_bbox[np.newaxis])[0]
     person_results = [dict(bbox=bbox_xywh)]
-    _, res = inference_mesh_model(hmr_model, 
-                                  img, 
+    _, res = inference_mesh_model(hmr_model,
+                                  img,
                                   person_results,
                                   format='xywh')
     verts = get_vertices(hmr_model, res)
 
     orig_height, orig_width, _ = img.shape
     center, scale = box2cs(bbox_xywh, (orig_height, orig_width))
-    
+
     bbox_csh = np.concatenate((center, scale))[np.newaxis]
-    
-    bbox_csh[:,2] = bbox_xywh[3]
-    
-    orig_cam = convert_crop_cam_to_orig_img(res['cam'], bbox_csh, orig_width, orig_height)
+
+    bbox_csh[:, 2] = bbox_xywh[3]
+
+    orig_cam = convert_crop_cam_to_orig_img(
+        res['cam'], bbox_csh, orig_width, orig_height)
     res['verts'] = verts
     res['orig_cam'] = orig_cam
-    
+
     return res
+
+
+def render_pred_mesh(img, bbox_cxcywh, verts, pred_cam):
+    orig_height, orig_width, _ = img.shape
+    center, scale = cxcywh2cs(bbox_cxcywh, (orig_height, orig_width))
+    bbox_csh = np.concatenate((center, scale))[np.newaxis]
+    bbox_csh[:, 2] = bbox_cxcywh[0, 3]
+    orig_cam = convert_crop_cam_to_orig_img(
+        pred_cam[np.newaxis], bbox_csh, orig_width, orig_height)[0]
+    return render_mesh(img, verts, orig_cam)
