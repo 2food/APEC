@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.getcwd())
 from meva.lib.spin import get_pretrained_hmr
 from tqdm import tqdm
 import argparse

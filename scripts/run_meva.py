@@ -1,6 +1,9 @@
 from meva.lib.meva_model import MEVA
 from meva.utils.video_config import update_cfg
 from torch.utils.data import DataLoader
+import sys
+import os
+sys.path.append(os.getcwd())
 from tqdm.auto import tqdm
 import argparse
 import data
