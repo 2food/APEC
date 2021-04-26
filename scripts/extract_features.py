@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 from meva.lib.spin import get_pretrained_hmr
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import argparse
 import data
 import numpy as np
@@ -23,7 +23,9 @@ def main(args):
 
     makedirs_ifno([f'{out_folder}/{n}/' for n in c.stripped_names])
 
-    for seq in tqdm(c):
+    c_range = range(len(c))
+    for i in tqdm(c_range):
+        seq = c.get(i)
         imgs = seq['norm_imgs']
         vid_name = c.stripped_names[seq['vid_idx']]
         frames = seq['frames']
