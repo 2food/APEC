@@ -213,7 +213,9 @@ class ClimbingDataset(Dataset):
         kp_utils.get_climb_joint_names = get_climb_joint_names
         kp_2d = kp_utils.convert_kps(kp_2d, 'climb', 'spin')
 
-        features = self.features[vid_idx][frames]
+        features = []
+        if len(self.features) > 0:
+            features = self.features[vid_idx][frames]
 
         target = {'raw_imgs': raw_imgs,
                   'norm_imgs': norm_imgs,
