@@ -1,9 +1,9 @@
-from meva.lib.meva_model import MEVA
-from meva.utils.video_config import update_cfg
-from torch.utils.data import DataLoader
 import sys
 import os
 sys.path.append(os.getcwd())
+from meva.lib.meva_model import MEVA
+from meva.utils.video_config import update_cfg
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 import argparse
 import data
@@ -19,10 +19,14 @@ def main(args):
     anno_folder = args.anno_folder
     feat_folder = args.feat_folder
     out_folder = args.out_folder
+
+    print('Loading climbing data ...')
     c = data.ClimbingDataset(vid_folder, anno_folder,
                              'all', seq_len=90, feat_folder=feat_folder)
+    print('Done')
 
     # load pretrained MEVA
+    print('Loading MEVA model ...')
     pretrained_file = f"results/meva/train_meva_2/model_best.pth.tar"
     config_file = f"meva/cfg/train_meva_2.yml"
     cfg = update_cfg(config_file)
@@ -41,6 +45,7 @@ def main(args):
     ckpt = ckpt['gen_state_dict']
     model.load_state_dict(ckpt)
     model.eval()
+    print('Done')
 
     dataloader = DataLoader(
         c, batch_size=cfg.TRAIN.BATCH_SIZE, num_workers=16, shuffle=False)
@@ -49,7 +54,8 @@ def main(args):
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
         for seqs in dataloader.batch_sampler:
-            feats = np.stack([c[seq] for seq in seqs]).to(device)
+            feats = torch.stack([torch.Tensor(c[seq])
+                                 for seq in seqs]).to(device)
             output = model(feats)[-1]
 
             pred_cam.append(output['theta'][:, :, :3])
