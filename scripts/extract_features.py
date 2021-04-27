@@ -29,6 +29,7 @@ def main(args):
         imgs = seq['norm_imgs']
         vid_name = c.stripped_names[seq['vid_idx']]
         frames = seq['frames']
+        frames = range(frames.start, frames.stop)
         for f, img in zip(frames, imgs):
             img = img.float().unsqueeze(0).to('cuda')
             feat, out = hmr(img, return_features=True)
