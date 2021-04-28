@@ -41,6 +41,12 @@ def trans_point2d(pt_2d, trans):
     return dst_pt[0:2]
 
 
+def trans_points2d(pts_2d, trans):
+    for n_jt in range(pts_2d.shape[0]):
+        pts_2d[n_jt, :2] = trans_point2d(pts_2d[n_jt], trans)
+    return pts_2d
+
+
 def rotate_2d(pt_2d, rot_rad):
     x = pt_2d[0]
     y = pt_2d[1]
