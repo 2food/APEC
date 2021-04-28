@@ -183,7 +183,7 @@ class ClimbingDataset(Dataset):
     # crop and transfrom keypoints
     raw_imgs = np.array(vid[frames])
     crop_res = [image_utils.get_single_image_crop_wtrans(
-        img, bbox, kps, scale=1.0) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
+        img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
     norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
     norm_imgs, kp_2d = torch.stack(norm_imgs), np.stack(kp_2d)
     trans, inv_trans = np.stack(trans), np.stack(inv_trans)

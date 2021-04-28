@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import os
 import torch
+import time
 
 
 def main(args):
@@ -53,6 +54,7 @@ def main(args):
     with torch.no_grad():
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
+        start = time.time()
         for seqs in dataloader.batch_sampler:
             feats = torch.stack([torch.Tensor(c[seq])
                                  for seq in seqs]).to(device)
@@ -64,7 +66,8 @@ def main(args):
             pred_betas.append(output['theta'][:, :, 75:])
             pred_joints3d.append(output['kp_3d'])
             norm_joints2d.append(output['kp_2d'])
-
+        total_time = time.time()
+        total = finish - start
         pred_cam = torch.cat(pred_cam, dim=0)
         pred_verts = torch.cat(pred_verts, dim=0)
         pred_pose = torch.cat(pred_pose, dim=0)
@@ -85,7 +88,8 @@ def main(args):
                    'pose': pred_pose,
                    'betas': pred_betas,
                    'joints3d': pred_joints3d,
-                   'joints2d': norm_joints2d}
+                   'joints2d': norm_joints2d
+                   'time': total_time}
     joblib.dump(output_dict, os.path.join(out_folder, "meva_output.pkl"))
 
 

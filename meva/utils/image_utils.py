@@ -41,9 +41,9 @@ def trans_point2d(pt_2d, trans):
     return dst_pt[0:2]
 
 
-def trans_points2d(pts_2d, trans):
+def trans_points2d(pts_2d, transs):
     for n_jt in range(pts_2d.shape[0]):
-        pts_2d[n_jt, :2] = trans_point2d(pts_2d[n_jt], trans)
+        pts_2d[n_jt, :2] = trans_point2d(pts_2d[n_jt], transs[n_jt])
     return pts_2d
 
 

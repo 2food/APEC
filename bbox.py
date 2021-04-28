@@ -61,13 +61,12 @@ def cxcywh2cs(bbox_cxcywh, input_size):
     """Transform the bbox format from xywh to (center,scale).
     Agrs:
         bbox_cxcywh (ndarray): Bounding boxes,
-            shaped (n, 4) or (n, 5). (center x, center y, width height, [score])
+            shaped (n, 4) (center x, center y, width, height)
     Returns:
-        tupe:
-         - np.ndarray(2,): Center x y.
-         - np.ndarray(2,): scale of w & h.
+         np.ndarray(n, 4): Center x y, scale x y.
     """
-    return box2cs(xyxy2xywh(cxcywh2xyxy(bbox_cxcywh))[0], input_size)
+    bs = xyxy2xywh(cxcywh2xyxy(bbox_cxcywh))
+    return np.array([box2cs(b, input_size) for b in bs]).reshape(len(bs),4)
 
 
 def box2cs(box, input_size):
