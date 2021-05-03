@@ -94,6 +94,7 @@ if __name__ == "__main__":
     seq_counter = 0
     amass_db = joblib.load(f"{amass_base}/amass_db.pt")
     pbar = tqdm(amass_db.items())
+    print(amass_db.keys())
     for (k, v) in pbar:
         pbar.set_description(k)
         amass_pose = v['poses']
