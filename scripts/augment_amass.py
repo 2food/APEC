@@ -15,6 +15,8 @@ from meva.utils.transform_utils import (
     rotation_matrix_to_angle_axis, rot6d_to_rotmat
 )
 
+from meva.utils.video_config import AMASS_DIR
+
 from scipy.spatial.transform import Rotation as sRot
 np.random.seed(1)
 left_right_idx = [0,  2,  1,  3,  5,  4,  6,  8,  7,  9,
@@ -82,9 +84,8 @@ def get_random_shape(batch_size):
 
 
 if __name__ == "__main__":
-    amass_base = "/home/nsx175/ucph-erda-home/AMASS"
     take_num = "take8"
-    # amass_cls_data = pk.load(open(os.path.join(amass_base, "amass_class.pkl"), "rb"))
+    # amass_cls_data = pk.load(open(os.path.join(AMASS_DIR, "amass_class.pkl"), "rb"))
     amass_seq_data = {}
     seq_length = -1
 
@@ -92,11 +93,11 @@ if __name__ == "__main__":
     video_annot = {}
     counter = 0
     seq_counter = 0
-    amass_db = joblib.load(f"{amass_base}/amass_db.pt")
+    amass_db = joblib.load(f"{AMASS_DIR}/amass_db.pt")
     pbar = tqdm(amass_db.items())
-    print(amass_db.keys())
     for (k, v) in pbar:
         pbar.set_description(k)
+
         amass_pose = v['poses']
         amass_trans = v['trans']
 
@@ -145,6 +146,6 @@ if __name__ == "__main__":
                 }
                 counter += 1
 
-    amass_output_file_name = f"{amass_base}/amass_{take_num}.pkl"
+    amass_output_file_name = f"{AMASS_DIR}/amass_{take_num}.pkl"
     print(amass_output_file_name, len(amass_seq_data))
     joblib.dump(amass_seq_data, open(amass_output_file_name, "wb"))

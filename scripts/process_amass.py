@@ -37,23 +37,23 @@ joints_to_use = np.arange(0, 156).reshape((-1, 3))[joints_to_use].reshape(-1)
 
 all_sequences = [
     'ACCAD',
-    'BioMotionLab_NTroje',
-    'BMLhandball',
-    'BMLmovi',
-    'CMU',
-    'DFaust_67',
-    'EKUT',
-    'Eyes_Japan_Dataset',
-    'HumanEva',
-    'KIT',
-    'MPI_HDM05',
-    'MPI_Limits',
-    'MPI_mosh',
-    'SFU',
-    'SSM_synced',
-    'TCD_handMocap',
-    'TotalCapture',
-    'Transitions_mocap',
+    #'BioMotionLab_NTroje',
+    'BMLhandball'
+    #'BMLmovi',
+    #'CMU',
+    #'DFaust_67',
+    #'EKUT',
+    #'Eyes_Japan_Dataset',
+    #'HumanEva',
+    #'KIT',
+    #'MPI_HDM05',
+    #'MPI_Limits',
+    #'MPI_mosh',
+    #'SFU',
+    #'SSM_synced',
+    #'TCD_handMocap',
+    #'TotalCapture',
+    #'Transitions_mocap',
 ]
 
 
@@ -63,23 +63,19 @@ def read_data(folder, sequences):
     if sequences == 'all':
         sequences = all_sequences
 
-    db = {
-        'theta': [],
-        'vid_name': [],
-    }
+    db = {}
 
     for seq_name in sequences:
         print(f'Reading {seq_name} sequence...')
         seq_folder = osp.join(folder, seq_name)
 
-        thetas, vid_names = read_single_sequence(seq_folder, seq_name)
-        seq_name_list = np.array([seq_name] * thetas.shape[0])
-        print(seq_name, 'number of videos', thetas.shape[0])
-        db['theta'].append(thetas)
-        db['vid_name'].append(vid_names)
+        seq = read_single_sequence(
+            seq_folder, seq_name)
 
-    db['theta'] = np.concatenate(db['theta'], axis=0)
-    db['vid_name'] = np.concatenate(db['vid_name'], axis=0)
+        poses = seq['poses']
+        seq_name_list = np.array([seq_name] * poses.shape[0])
+        print(seq_name, 'number of videos', poses.shape[0])
+        db[seq_name] = seq
 
     return db
 
@@ -87,8 +83,14 @@ def read_data(folder, sequences):
 def read_single_sequence(folder, seq_name):
     subjects = os.listdir(folder)
 
-    thetas = []
-    vid_names = []
+    seq = {
+        'poses': [],
+        'trans': [],
+        'mocap_framerate': [],
+        'betas': [],
+        'dmpls': [],
+        'vid_name': [],
+    }
 
     for subject in tqdm(subjects):
         actions = [x for x in os.listdir(
@@ -102,21 +104,32 @@ def read_single_sequence(folder, seq_name):
 
             data = np.load(fname)
 
-            pose = data['poses'][:, joints_to_use]
+            poses = data['poses'][:, joints_to_use]
 
-            if pose.shape[0] < 60:
+            if poses.shape[0] < 90:
                 continue
-
-            shape = np.repeat(data['betas'][:10]
-                              [np.newaxis], pose.shape[0], axis=0)
-            theta = np.concatenate([pose, shape], axis=1)
+            trans = data['trans']
+            mocap_framerate = data['mocap_framerate'].item()
+            betas = data['betas']
+            dmpls = data['dmpls']
             vid_name = np.array(
-                [f'{seq_name}_{subject}_{action[:-4]}'] * pose.shape[0])
+                [f'{seq_name}_{subject}_{action[:-4]}'] * poses.shape[0])
 
-            vid_names.append(vid_name)
-            thetas.append(theta)
+            seq['poses'].append(poses)
+            seq['trans'].append(trans)
+            seq['mocap_framerate'].append(mocap_framerate)
+            seq['betas'].append(betas)
+            seq['dmpls'].append(dmpls)
+            seq['vid_name'].append(vid_name)
 
-    return np.concatenate(thetas, axis=0), np.concatenate(vid_names, axis=0)
+    seq['poses'] = np.concatenate(seq['poses'], axis=0)
+    seq['trans'] = np.concatenate(seq['trans'], axis=0)
+    seq['mocap_framerate'] = seq['mocap_framerate'][0]
+    seq['betas'] = np.concatenate(seq['betas'], axis=0)
+    seq['dmpls'] = np.concatenate(seq['dmpls'], axis=0)
+    seq['vid_name'] = np.concatenate(seq['vid_name'], axis=0)
+
+    return seq
 
 
 def read_seq_data(folder, nsubjects, fps):
@@ -134,7 +147,7 @@ def read_seq_data(folder, nsubjects, fps):
             mocap_framerate = int(data['mocap_framerate'])
             sampling_freq = mocap_framerate // fps
             sequences[(subject, action)
-                      ] = data['poses'][0::sampling_freq, joints_to_use]
+                      ] = data['poses'][0:: sampling_freq, joints_to_use]
 
     train_set = {}
     test_set = {}

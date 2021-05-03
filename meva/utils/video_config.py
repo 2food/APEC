@@ -13,7 +13,7 @@ from yacs.config import CfgNode as CN
 # CONSTANTS
 # You may modify them at will
 VIBE_DB_DIR = '/hdd/zen/data/video_pose/vibe_db'
-AMASS_DIR = '/home/nsx175/ucph-erda-home/AMASS'
+AMASS_DIR = '/media/tormod/Den Lille/Thesis/AMASS'# '/home/nsx175/ucph-erda-home/AMASS'
 INSTA_DIR = '/hdd/zen/data/video_pose/insta_variety'
 MPII3D_DIR = '/hdd/zen/data/video_pose/mpi_inf_3dhp'
 H36M_DIR = '/hdd/zen/data/video_pose/h36m/raw_data/'
