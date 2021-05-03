@@ -82,7 +82,7 @@ def get_random_shape(batch_size):
 
 
 if __name__ == "__main__":
-    amass_base = "~/ucph-erda-home/AMASS"
+    amass_base = "/home/nsx175/ucph-erda-home/AMASS"
     take_num = "take8"
     # amass_cls_data = pk.load(open(os.path.join(amass_base, "amass_class.pkl"), "rb"))
     amass_seq_data = {}
