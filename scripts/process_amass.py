@@ -23,7 +23,7 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-from meva.utils.video_config import VIBE_DB_DIR
+from meva.utils.video_config import AMASS_DIR
 
 dict_keys = ['betas', 'dmpls', 'gender', 'mocap_framerate', 'poses', 'trans']
 
@@ -155,6 +155,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     db = read_data(args.dir, sequences=all_sequences)
-    db_file = osp.join(VIBE_DB_DIR, 'amass_db.pt')
+    db_file = osp.join(AMASS_DIR, 'amass_db.pt')
     print(f'Saving AMASS dataset to {db_file}')
     joblib.dump(db, db_file)
