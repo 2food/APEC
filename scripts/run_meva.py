@@ -60,7 +60,7 @@ def main(args):
         for seqs in tqdm(dataloader.batch_sampler):
             feats = torch.stack([torch.Tensor(c[seq])
                                  for seq in seqs]).to(device)
-            output = model(feats)[-1]
+            output = model(feats)[-1].copy()
 
             pred_cam.append(output['theta'][:, :, :3])
             pred_verts.append(output['verts'])

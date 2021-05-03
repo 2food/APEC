@@ -102,13 +102,13 @@ class ClimbingDataset(Dataset):
   video_names = ['IMG_2139.MOV',
                  'IMG_2140.MOV',
                  'IMG_2141.MOV',
-                 'IMG_2142.MOV'
-                 #'IMG_2320.mov',
-                 #'VID_20210123_091729.mp4',
-                 #'VID_20210123_104706.mp4',
-                 #'VID_20210123_110129.mp4',
-                 #'VID_20210123_111337.mp4',
-                 #'VID_20210123_111921.mp4'
+                 'IMG_2142.MOV',
+                 'IMG_2320.mov',
+                 'VID_20210123_091729.mp4',
+                 'VID_20210123_104706.mp4',
+                 'VID_20210123_110129.mp4',
+                 'VID_20210123_111337.mp4',
+                 'VID_20210123_111921.mp4'
                  ]
 
   stripped_names = [n.split('.')[0] for n in video_names]
@@ -130,18 +130,6 @@ class ClimbingDataset(Dataset):
     self.labels = [read_cvat_anno(f'{anno_folder}/{n}.xml')
                    for n in self.stripped_names]
 
-    self.features = []
-    if feat_folder is not None:
-      print(f'Reading features for ...', end=' ')
-      for i, vid_name in enumerate(self.stripped_names):
-        features = []
-        folder = f'{feat_folder}/{vid_name}'
-        print(vid_name, end=' ')
-        for file in os.listdir(f'{feat_folder}/{vid_name}'):
-          res = np.load(f'{folder}/{file}', allow_pickle=True)
-          features.append(res.item()['features'])
-        self.features.append(np.stack(features))
-
     self.bboxes = [image_utils.get_bbox_from_kp2d(
         l).T for l in self.labels]
     self.seq_len = seq_len
@@ -159,6 +147,18 @@ class ClimbingDataset(Dataset):
         f, self.seq_len, step=self.seq_len - self.overlap) for f in self.frames]
     self.seq_lengths = np.array([s.shape[0] for s in self.seqs])
     self.len = sum(self.seq_lengths)
+
+    self.features = []
+    if feat_folder is not None:
+      print(f'Reading features for ...', end=' ')
+      for i, vid_name in enumerate(self.stripped_names):
+        features = []
+        folder = f'{feat_folder}/{vid_name}'
+        print(vid_name, end=' ')
+        for frame_id in self.frames[i]:
+          res = np.load(f'{folder}/{frame_id:06d}.npy', allow_pickle=True)
+          features.append(res.item()['features'])
+        self.features.append(np.stack(features))
 
   def __len__(self):
     return self.len
