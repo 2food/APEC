@@ -12,10 +12,12 @@ import numpy as np
 import os
 import torch
 import time
+from tqdm import tqdm
+from mesh import render_vids
 
 
 def main(args):
-    device = 'cuda'
+    device = torch.device('cpu')
     vid_folder = args.vid_folder
     anno_folder = args.anno_folder
     feat_folder = args.feat_folder
@@ -41,7 +43,7 @@ def main(args):
         use_residual=cfg.MODEL.TGRU.RESIDUAL,
         cfg=cfg.VAE_CFG,
     ).to(device)
-    ckpt = torch.load(pretrained_file)
+    ckpt = torch.load(pretrained_file, map_location=device)
     # print(f'Performance of pretrained model on 3DPW: {ckpt["performance"]}')
     ckpt = ckpt['gen_state_dict']
     model.load_state_dict(ckpt)
@@ -55,7 +57,7 @@ def main(args):
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
         start = time.time()
-        for seqs in dataloader.batch_sampler:
+        for seqs in tqdm(dataloader.batch_sampler):
             feats = torch.stack([torch.Tensor(c[seq])
                                  for seq in seqs]).to(device)
             output = model(feats)[-1]
@@ -90,7 +92,11 @@ def main(args):
                    'joints3d': pred_joints3d,
                    'joints2d': norm_joints2d,
                    'time': total_time}
+    print('Saving results...')
     joblib.dump(output_dict, os.path.join(out_folder, "meva_output.pkl"))
+
+    print('Rendering videos...')
+    render_vids(c, output_dict, out_folder)
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ from mmpose.utils.hooks import OutputHook
 
 from bbox import box2cs, xyxy2xywh, xywh2xyxy, cxcywh2cs
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+#os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 from meva.utils.renderer import Renderer
 from meva.utils.demo_utils import convert_crop_cam_to_orig_img
@@ -334,3 +334,35 @@ def render_pred_mesh(img, bbox_cxcywh, verts, pred_cam):
     orig_cam = convert_crop_cam_to_orig_img(
         pred_cam[np.newaxis], bbox_csh, orig_width, orig_height)[0]
     return render_mesh(img, verts, orig_cam)
+
+
+def render_vids(cd, res, out_folder):
+    all_verts = res['verts']
+    all_pred_cam = res['pred_cam']
+    cumlens = np.cumsum(cd.seq_lengths)
+    for vid_idx, cumlen in enumerate(cumlens):
+        vid_name = cd.stripped_names[vid_idx]
+        start = 0 if vid_idx == 0 else cumlens[vid_idx - 1]
+        orig_height, orig_width, _ = cd.get(start)['raw_imgs'][0].shape
+        renderer = Renderer(resolution=(
+            orig_width, orig_height), orig_img=True)
+        print(vid_name, '...')
+        for seqidx in trange(start, cumlen):
+            seq_info = cd.get(seqidx)
+            imgs = seq_info['raw_imgs']
+            bboxes = seq_info['bboxes']
+            bboxcs = cxcywh2cs(bboxes, (orig_height, orig_width))
+            bboxcs[:, 2:] = bboxes[:, 2:]
+            frames = seq_info['frames']
+            frames = np.arange(frames.start, frames.stop)
+            verts = all_verts[seqidx]
+            pred_cam = all_pred_cam[seqidx]
+            orig_cam = convert_crop_cam_to_orig_img(
+                pred_cam, bboxcs, orig_width, orig_height)
+            orig_cam[:, :2] *= 1.2
+            for i, v, oc, f, bb in zip(imgs, verts, orig_cam, frames, bboxes):
+                mesh_img = renderer.render(i, v, oc)
+                mmcv.imwrite(mesh_img, f'{out_folder}/{vid_name}/{f:06d}.png')
+
+        mmcv.frames2video(f'{out_folder}/{vid_name}', f'{out_folder}/{vid_name}.mp4',
+                          filename_tmpl='{:06d}.png')

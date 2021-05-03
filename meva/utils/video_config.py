@@ -13,7 +13,7 @@ from yacs.config import CfgNode as CN
 # CONSTANTS
 # You may modify them at will
 VIBE_DB_DIR = '/hdd/zen/data/video_pose/vibe_db'
-AMASS_DIR = '/hdd/zen/data/video_pose/amass'
+AMASS_DIR = '~/ucph-erda-home/AMASS'
 INSTA_DIR = '/hdd/zen/data/video_pose/insta_variety'
 MPII3D_DIR = '/hdd/zen/data/video_pose/mpi_inf_3dhp'
 H36M_DIR = '/hdd/zen/data/video_pose/h36m/raw_data/'
@@ -111,7 +111,7 @@ def get_cfg_defaults():
 
 def update_cfg(cfg_file):
     cfg = get_cfg_defaults()
-    
+
     cfg.merge_from_file(cfg_file)
     return cfg.clone()
 
