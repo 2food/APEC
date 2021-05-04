@@ -37,23 +37,23 @@ joints_to_use = np.arange(0, 156).reshape((-1, 3))[joints_to_use].reshape(-1)
 
 all_sequences = [
     'ACCAD',
-    #'BioMotionLab_NTroje',
-    'BMLhandball'
-    #'BMLmovi',
-    #'CMU',
-    #'DFaust_67',
-    #'EKUT',
-    #'Eyes_Japan_Dataset',
-    #'HumanEva',
-    #'KIT',
-    #'MPI_HDM05',
-    #'MPI_Limits',
-    #'MPI_mosh',
-    #'SFU',
-    #'SSM_synced',
-    #'TCD_handMocap',
-    #'TotalCapture',
-    #'Transitions_mocap',
+    'BioMotionLab_NTroje',
+    'BMLhandball',
+    'BMLmovi',
+    'CMU',
+    'DFaust_67',
+    'EKUT',
+    'Eyes_Japan_Dataset',
+    'HumanEva',
+    'KIT',
+    'MPI_HDM05',
+    'MPI_Limits',
+    'MPI_mosh',
+    'SFU',
+    'SSM_synced',
+    'TCD_handMocap',
+    'TotalCapture',
+    'Transitions_mocap'
 ]
 
 

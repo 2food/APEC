@@ -28,7 +28,7 @@ model_specs:
   e_birnn: true
   use_drnn_mlp: false
   nx_rnn: 512
-  nh_mlp: 
+  nh_mlp:
     - 1024
     - 512
 norm_data: false

@@ -1,14 +1,14 @@
 data_specs:
   dataset_name: amass_rec
-  file_path: "/home/nsx175/AMASS/amass_take8.pkl"
+  file_path: "/home/nsx175/AMASS/amass_take8.pkl" # "/media/tormod/Den Lille/Thesis/AMASS/amass_take8.pkl"
   flip_cnd: 0
   has_smpl_root: true
   traj_dim: 144
-  t_total: 90
+  t_total: 30
   nc: 2
   load_class: -1
   root_dim: 6
-  flip_time: false
+  flip_time: true
 
 loss_specs:
   loss_names:
@@ -22,7 +22,7 @@ loss_specs:
 
 model_specs:
   nz: 512
-  model_name: VAErec
+  model_name: VAErecV2
   rnn_type: gru
   x_birnn: true
   e_birnn: true
@@ -33,9 +33,9 @@ model_specs:
     - 512
 norm_data: false
 
-lr: 3.e-4
+lr: 1.e-4
 
-batch_size: 400
+batch_size: 512
 num_epoch_fix: 500
 num_samples: 500000
 num_epoch: 1000
