@@ -121,7 +121,7 @@ if __name__ == "__main__":
             start_points = start_points + start_points_org + start_points_flip
 
         seq_counter += len(seqs)
-        for idx in trange(len(seqs)):
+        for idx in range(len(seqs)):
 
             curr_seq = torch.tensor(seqs[idx])
     #         if curr_seq.shape[0] != seq_length: break
