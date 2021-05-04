@@ -60,14 +60,15 @@ def main(args):
         for seqs in tqdm(dataloader.batch_sampler):
             feats = torch.stack([torch.Tensor(c[seq])
                                  for seq in seqs]).to(device)
-            output = model(feats)[-1].clone().detach()
+            output = model(feats)[-1]
 
-            pred_cam.append(output['theta'][:, :, :3])
-            pred_verts.append(output['verts'])
-            pred_pose.append(output['theta'][:, :, 3:75])
-            pred_betas.append(output['theta'][:, :, 75:])
-            pred_joints3d.append(output['kp_3d'])
-            norm_joints2d.append(output['kp_2d'])
+            theta = output['theta'].cpu()
+            pred_cam.append(theta[:, :, :3])
+            pred_verts.append(output['verts'].cpu())
+            pred_pose.append(thets[:, :, 3:75])
+            pred_betas.append(theta[:, :, 75:])
+            pred_joints3d.append(output['kp_3d'].cpu())
+            norm_joints2d.append(output['kp_2d'].cpu())
         finish = time.time()
         total_time = finish - start
         pred_cam = torch.cat(pred_cam, dim=0)
@@ -78,12 +79,12 @@ def main(args):
         norm_joints2d = torch.cat(norm_joints2d, dim=0)
 
     # ========= Save results to a pickle file ========= #
-    pred_cam = pred_cam.cpu().numpy()
-    pred_verts = pred_verts.cpu().numpy()
-    pred_pose = pred_pose.cpu().numpy()
-    pred_betas = pred_betas.cpu().numpy()
-    pred_joints3d = pred_joints3d.cpu().numpy()
-    norm_joints2d = norm_joints2d.cpu().numpy()
+    pred_cam = pred_cam.numpy()
+    pred_verts = pred_verts.numpy()
+    pred_pose = pred_pose.numpy()
+    pred_betas = pred_betas.numpy()
+    pred_joints3d = pred_joints3d.numpy()
+    norm_joints2d = norm_joints2d.numpy()
 
     output_dict = {'pred_cam': pred_cam,
                    'verts': pred_verts,
