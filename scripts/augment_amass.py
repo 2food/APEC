@@ -9,7 +9,7 @@ import pickle as pk
 import joblib
 import torch
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from meva.utils.transform_utils import (
     convert_aa_to_orth6d, convert_orth_6d_to_aa, vertizalize_smpl_root,
     rotation_matrix_to_angle_axis, rot6d_to_rotmat
@@ -121,7 +121,7 @@ if __name__ == "__main__":
             start_points = start_points + start_points_org + start_points_flip
 
         seq_counter += len(seqs)
-        for idx in range(len(seqs)):
+        for idx in trange(len(seqs)):
 
             curr_seq = torch.tensor(seqs[idx])
     #         if curr_seq.shape[0] != seq_length: break
