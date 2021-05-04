@@ -112,9 +112,9 @@ class ClimbingDataset(Dataset):
                  ]
 
   stripped_names = [n.split('.')[0] for n in video_names]
-  test_seqs = [slice((i * 12) * 30, (i * 12 + 6) * 30)
+  test_seqs = [range((i * 12) * 30, (i * 12 + 6) * 30)
                for i, _ in enumerate(video_names)]
-  val_seqs = [slice((i * 12 + 6) * 30, (i * 12 + 12) * 30)
+  val_seqs = [range((i * 12 + 6) * 30, (i * 12 + 12) * 30)
               for i, _ in enumerate(video_names)]
 
   def __init__(self,
@@ -135,13 +135,15 @@ class ClimbingDataset(Dataset):
     self.seq_len = seq_len
     self.overlap = overlap
 
-    self.all_seqs = [slice(0, min(len(v), 120 * 30))
+    self.all_seqs = [range(0, min(len(v), 120 * 30))
                      for v in self.vids]  # annotated 2 mins
-    self.all_seqs[0] = slice(0, len(self.vids[0]))  # fully annotated
+    self.all_seqs[0] = range(0, len(self.vids[0]))  # fully annotated
 
     seq_switch = {'all': self.all_seqs,
                   'test': self.test_seqs,
-                  'val': self.val_seqs}
+                  'val': self.val_seqs,
+                  'train': []  # todo
+                  }
     self.frames = [np.arange(s.start, s.stop) for s in seq_switch[mode]]
     self.seqs = [view_as_windows(
         f, self.seq_len, step=self.seq_len - self.overlap) for f in self.frames]
@@ -165,12 +167,12 @@ class ClimbingDataset(Dataset):
 
   def __getitem__(self, index):
     """Gets a sequence of SMPL features."""
-    vid_idx, frames = self.get_indices(index)
-    return self.features[vid_idx][frames]
+    vid_idx, _, feat_slice = self.get_indices(index)
+    return self.features[vid_idx][feat_slice]
 
   def get(self, index):
     """Gets more info about the sequence than __getitem__."""
-    vid_idx, frames = self.get_indices(index)
+    vid_idx, frames, feat_slice = self.get_indices(index)
 
     vid = self.vids[vid_idx]
 
@@ -194,7 +196,7 @@ class ClimbingDataset(Dataset):
 
     features = []
     if len(self.features) > 0:
-      features = self.features[vid_idx][frames]
+      features = self.features[vid_idx][feat_slice]
 
     target = {'raw_imgs': raw_imgs,
               'norm_imgs': norm_imgs,
@@ -213,4 +215,7 @@ class ClimbingDataset(Dataset):
     seq_idx = index - self.seq_lengths[:vid_idx].sum()
     seq = self.seqs[vid_idx][seq_idx]
     frames = slice(seq[0], seq[-1] + 1)
-    return vid_idx, frames
+
+    split_start = self.frames[vid_idx][0]
+    feat_slice = slice(frames.start - split_start, frames.stop - split_start)
+    return vid_idx, frames, feat_slice

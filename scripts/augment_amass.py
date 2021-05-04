@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 curr_seq = vertizalize_smpl_root(
                     curr_seq, root_vec=sampled_root)
                 pose_seq_6d = convert_aa_to_orth6d(
-                    torch.tensor(curr_seq)).reshape(-1, 144)
+                    curr_seq.clone()).reshape(-1, 144)
                 beta = get_random_shape(1).squeeze().numpy()
                 amass_seq_data[amass_key] = {
                     "label": 1,
