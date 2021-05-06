@@ -16,5 +16,7 @@ dependencies:
   - ipywidgets
   - numpy
   - cython
+  - hdf5=1.10.6
+  - h5py
   - pip
 prefix: /home/tormod/anaconda3/envs/apec

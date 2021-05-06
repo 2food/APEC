@@ -1,6 +1,6 @@
 data_specs:
   dataset_name: amass_rec
-  file_path: "/home/nsx175/AMASS/amass_take8.pkl" # "/media/tormod/Den Lille/Thesis/AMASS/amass_take8.pkl"
+  file_path: "/home/nsx175/ucph-erda-home/AMASS/amass_take8.pkl" # "/media/tormod/Den Lille/Thesis/AMASS/amass_take8.pkl"
   flip_cnd: 0
   has_smpl_root: true
   traj_dim: 144

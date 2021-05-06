@@ -342,13 +342,20 @@ def torch_vid2numpy(video):
 def get_bbox_from_kp2d(kp_2d):
     # get bbox
     if len(kp_2d.shape) > 2:
-        ul = np.array([kp_2d[:, :, 0].min(axis=1),
-                       kp_2d[:, :, 1].min(axis=1)])  # upper left
-        lr = np.array([kp_2d[:, :, 0].max(axis=1),
-                       kp_2d[:, :, 1].max(axis=1)])  # lower right
+        return np.stack([get_bbox_from_kp2d(kp_2d[i]) for i in range(kp_2d.shape[0])])
+        # not_zero = kp_2d[:, :, -1] > 0
+        # max_coord = kp_2d[:, :, :2].max(axis=1)
+        # ul = np.array([kp_2d[:, :, 0].min(axis=1, where=not_zero, initial=max_coord[:, 0]),
+        #                kp_2d[:, :, 1].min(axis=1, where=not_zero, initial=max_coord[:, 1])])  # upper left
+        # lr = np.array([kp_2d[:, :, 0].max(axis=1, where=not_zero, initial=0.0),
+        #                kp_2d[:, :, 1].max(axis=1, where=not_zero, initial=0.0)])  # lower right
     else:
-        ul = np.array([kp_2d[:, 0].min(), kp_2d[:, 1].min()])  # upper left
-        lr = np.array([kp_2d[:, 0].max(), kp_2d[:, 1].max()])  # lower right
+        not_zero = kp_2d[:, -1] > 0
+        max_coord = kp_2d[:, :2].max(axis=0)
+        ul = np.array([kp_2d[:, 0].min(where=not_zero, initial=max_coord[0]),
+                       kp_2d[:, 1].min(where=not_zero, initial=max_coord[1])])  # upper left
+        lr = np.array([kp_2d[:, 0].max(where=not_zero, initial=0.0),
+                       kp_2d[:, 1].max(where=not_zero, initial=0.0)])  # lower right
 
     # ul[1] -= (lr[1] - ul[1]) * 0.10  # prevent cutting the head
     w = lr[0] - ul[0]
