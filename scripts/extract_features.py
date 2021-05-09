@@ -21,6 +21,7 @@ def main(args):
     makedirs_ifno([f'{out_folder}'])
 
     current_vid_name = data.stripped_names[0]
+    outs = []
     c_range = range(len(c))
     for i in tqdm(c_range):
         seq = c.get(i)
@@ -28,7 +29,6 @@ def main(args):
         vid_name = data.stripped_names[seq['vid_idx']]
         frames = seq['frames']
         frames = range(frames.start, frames.stop)
-        outs = []
         for f, img in zip(frames, imgs):
             img = img.float().unsqueeze(0).to('cuda')
             feat, out = hmr(img, return_features=True)

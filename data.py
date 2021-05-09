@@ -65,11 +65,37 @@ def read_cvat_anno(file):
     no_frames = int(root.find('meta/task/size').text)
     data = np.empty((no_frames, 19, 2))
 
-    for i, track in enumerate(root.findall('track')):
+    for track in root.findall('track'):
+        label = track.attrib['label']
+        i = get_climb_cvat_joint_names().index(label)
         for j, point in enumerate(track.findall('points')):
             p_strs = point.attrib['points'].split(',')
             data[j, i] = list(map(float, p_strs))
     return data
+
+
+def get_climb_cvat_joint_names():
+    return [
+        'Nose',
+        'Right Shoulder',
+        'Right Elbow',
+        'Right Wrist',
+        'Right Hand',
+        'Left Shoulder',
+        'Left Elbow',
+        'Left Wrist',
+        'Left Hand',
+        'Right Hip',
+        'Right Knee',
+        'Right Ankle',
+        'Right Foot',
+        'Left Hip',
+        'Left Knee',
+        'Left Ankle',
+        'Left Foot',
+        'Right Ear',
+        'Left Ear'
+    ]
 
 
 def get_climb_joint_names():
@@ -304,6 +330,8 @@ class ClimbingDataset(Dataset):
             else:
                 self.seqs.append(view_as_windows(
                     f, self.seq_len, step=self.seq_len - self.overlap))
+        if mode in ['test', 'val']:
+            self.seqs = [np.concatenate(self.seqs)]
         self.seq_lengths = np.array([s.shape[0] for s in self.seqs])
         self.len = sum(self.seq_lengths)
 
@@ -326,7 +354,7 @@ class ClimbingDataset(Dataset):
 
         if name not in self.labels:
             self.load_labels(name)
-        kp_2d = self.labels[name][frames]
+        labels = self.labels[name][frames]
         bboxes = self.bboxes[name][frames]
         if name not in self.features:
             self.load_features(name)
@@ -335,7 +363,7 @@ class ClimbingDataset(Dataset):
         # crop and transfrom keypoints
         raw_imgs = np.array(vid[frames])
         crop_res = [image_utils.get_single_image_crop_wtrans(
-            img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), kp_2d.copy())]
+            img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
         norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
         norm_imgs, kp_2d = torch.stack(norm_imgs), np.stack(kp_2d)
         trans, inv_trans = np.stack(trans), np.stack(inv_trans)
@@ -343,6 +371,7 @@ class ClimbingDataset(Dataset):
         target = {'raw_imgs': raw_imgs,
                   'norm_imgs': norm_imgs,
                   'features': features,
+                  'raw_kp_2d': labels,
                   'kp_2d': kp_2d,
                   'vid_idx': vid_idx,
                   'frames': frames,
@@ -352,7 +381,7 @@ class ClimbingDataset(Dataset):
         return target
 
     def get_indices(self, index):
-        if self.mode == "test":
+        if self.mode in ["test", "val"]:
             vid_idx = 0
             seq_idx = index
         else:
@@ -364,7 +393,7 @@ class ClimbingDataset(Dataset):
 
     def load_labels(self, name):
         # print(f'Reading labels for {name}')
-        labels = np.load(f'{self.est_folder}/{name}.npy')
+        labels = np.load(f'{self.est_folder}/{name}.npy', allow_pickle=True)
 
         # clip labels to image size
         vid_shape = self.vids[stripped_names.index(name)].resolution
@@ -373,7 +402,8 @@ class ClimbingDataset(Dataset):
 
         labels = kp_utils.convert_kps(labels, 'mmpose', 'spin')
         if name in hand_annotated:
-            hand_labels = read_cvat_anno(f'{self.anno_folder}/{name}.xml')
+            hand_labels = read_cvat_anno(
+                f'{self.anno_folder}/{name}.xml')
             # add confidence of 1
             hand_labels = np.concatenate(
                 (hand_labels, np.ones((hand_labels.shape[0], 19, 1))), axis=2)
@@ -394,7 +424,8 @@ class ClimbingDataset(Dataset):
         features = []
         if self.feat_folder is not None:
             # print(f'Reading features for {name}')
-            feat_res = np.load(f'{self.feat_folder}/{name}.npy')
+            feat_res = np.load(
+                f'{self.feat_folder}/{name}.npy', allow_pickle=True)
             features = [r['features'] for r in feat_res]
             features = np.stack(features)
 

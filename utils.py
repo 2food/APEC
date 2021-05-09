@@ -26,13 +26,14 @@ def imshowt(inp, title=None):
 
 def imshownp(inp, title=None, savename=None, bgr=False):
     """Imshow for ndarray."""
+    ax = plt.axes()
+    img = inp
     if bgr:
-        plt.imshow(inp[:, :, ::-1])
-    else:
-        plt.imshow(inp)
+        img = inp[:, :, ::-1]
+    plt.imshow(img)
     plt.axis('off')
     if title is not None:
         plt.title(title)
     if savename is not None:
         plt.savefig(savename, bbox_inches='tight', dpi=500)
-    plt.pause(0.001)  # pause a bit so that plots are updated
+    return ax
