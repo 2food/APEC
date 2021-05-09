@@ -276,14 +276,15 @@ class ClimbingDataset(Dataset):
         self.seq_len = seq_len
         self.overlap = overlap
 
-        self.vids = [mmcv.VideoReader(f'{video_folder}/{n}')
+        self.vids = [mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
                      for n in video_names]
 
         self.labels = {}
         self.bboxes = {}
         self.features = {}
 
-        all_seqs = [range(len(v)) for v in self.vids]
+        # sometimes it fails to read the last frame
+        all_seqs = [range(len(v) - 1) for v in self.vids]
         test_seqs = [range((i * 36) * 30, (i * 36 + 18) * 30)
                      for i in range(6)]
         val_seqs = [range((i * 36 + 18) * 30, (i * 36 + 36) * 30)
@@ -379,9 +380,14 @@ class ClimbingDataset(Dataset):
             hand_labels = kp_utils.convert_kps(hand_labels, 'climb', 'spin')
             annotated_frames = hand_annotated[name]
             labels[annotated_frames] = hand_labels[annotated_frames]
-        self.labels[name] = labels
+
+        # threshold labels confidence
+        threshold = 0.2
+        labels[labels[:, :, -1] <= threshold] = 0
 
         bboxes = image_utils.get_bbox_from_kp2d(labels)
+
+        self.labels[name] = labels
         self.bboxes[name] = bboxes
 
     def load_features(self, name):
