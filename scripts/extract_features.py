@@ -41,6 +41,7 @@ def main(args):
             np.save(f'{out_folder}/{current_vid_name}.npy', outs)
             outs = []
             current_vid_name = vid_name
+    np.save(f'{out_folder}/{current_vid_name}.npy', outs)
 
 
 if __name__ == '__main__':
