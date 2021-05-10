@@ -294,13 +294,6 @@ def get_vertices(model, pred_result):
     return smpl_out.vertices.detach().cpu().numpy()
 
 
-def render_mesh(img, verts, orig_cam):
-    orig_height, orig_width, _ = img.shape
-    renderer = Renderer(resolution=(orig_width, orig_height), orig_img=True)
-    mesh_img = renderer.render(img, verts, orig_cam)
-    return mesh_img
-
-
 def predict_mesh(hmr_model, img, frame_bbox):
     hmr_model.eval()
     bbox_xywh = xyxy2xywh(frame_bbox[np.newaxis])[0]
@@ -326,13 +319,17 @@ def predict_mesh(hmr_model, img, frame_bbox):
     return res
 
 
+def render_mesh(img, verts, orig_cam):
+    orig_height, orig_width, _ = img.shape
+    renderer = Renderer(resolution=(orig_width, orig_height), orig_img=True)
+    mesh_img = renderer.render(img, verts, orig_cam)
+    return mesh_img
+
+
 def render_pred_mesh(img, bbox_cxcywh, verts, pred_cam):
     orig_height, orig_width, _ = img.shape
-    center, scale = cxcywh2cs(bbox_cxcywh, (orig_height, orig_width))
-    bbox_csh = np.concatenate((center, scale))[np.newaxis]
-    bbox_csh[:, 2] = bbox_cxcywh[0, 3]
     orig_cam = convert_crop_cam_to_orig_img(
-        pred_cam[np.newaxis], bbox_csh, orig_width, orig_height)[0]
+        pred_cam[np.newaxis], bbox_cxcywh, orig_width, orig_height)[0]
     return render_mesh(img, verts, orig_cam)
 
 
@@ -341,7 +338,7 @@ def render_vids(cd, res, out_folder):
     all_pred_cam = res['pred_cam']
     cumlens = np.cumsum(cd.seq_lengths)
     for vid_idx, cumlen in enumerate(cumlens):
-        vid_name = cd.stripped_names[vid_idx]
+        vid_name = data.stripped_names[vid_idx]
         start = 0 if vid_idx == 0 else cumlens[vid_idx - 1]
         orig_height, orig_width, _ = cd.get(start)['raw_imgs'][0].shape
         renderer = Renderer(resolution=(

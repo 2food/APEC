@@ -25,7 +25,7 @@ def main(args):
 
     print('Loading climbing data ...')
     c = data.ClimbingDataset(vid_folder, anno_folder,
-                             'all', seq_len=90, feat_folder=feat_folder)
+                             'test', seq_len=90, feat_folder=feat_folder)
     print('Done')
 
     # load pretrained MEVA
@@ -33,9 +33,10 @@ def main(args):
     pretrained_file = f"results/meva/train_meva_2/model_best.pth.tar"
     config_file = f"meva/cfg/train_meva_2.yml"
     cfg = update_cfg(config_file)
+    batch_size = 6
     model = MEVA(
         n_layers=cfg.MODEL.TGRU.NUM_LAYERS,
-        batch_size=cfg.TRAIN.BATCH_SIZE,
+        batch_size=batch_size,
         seqlen=cfg.DATASET.SEQLEN,
         hidden_size=cfg.MODEL.TGRU.HIDDEN_SIZE,
         add_linear=cfg.MODEL.TGRU.ADD_LINEAR,
@@ -51,7 +52,7 @@ def main(args):
     print('Done')
 
     dataloader = DataLoader(
-        c, batch_size=cfg.TRAIN.BATCH_SIZE, num_workers=16, shuffle=False)
+        c, batch_size=batch_size, num_workers=16, shuffle=False)
 
     with torch.no_grad():
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
