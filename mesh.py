@@ -4,6 +4,7 @@ import cv2
 import mmcv
 import numpy as np
 import torch
+from tqdm.auto import tqdm, trange
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
@@ -12,6 +13,7 @@ from mmpose.models import build_posenet
 from mmpose.utils.hooks import OutputHook
 
 from bbox import box2cs, xyxy2xywh, xywh2xyxy, cxcywh2cs
+import data
 
 #os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
@@ -334,8 +336,8 @@ def render_pred_mesh(img, bbox_cxcywh, verts, pred_cam):
 
 
 def render_vids(cd, res, out_folder):
-    all_verts = res['verts']
-    all_pred_cam = res['pred_cam']
+    all_verts = res['verts'].copy()
+    all_pred_cam = res['pred_cam'].copy()
     cumlens = np.cumsum(cd.seq_lengths)
     for vid_idx, cumlen in enumerate(cumlens):
         vid_name = data.stripped_names[vid_idx]
@@ -348,15 +350,13 @@ def render_vids(cd, res, out_folder):
             seq_info = cd.get(seqidx)
             imgs = seq_info['raw_imgs']
             bboxes = seq_info['bboxes']
-            bboxcs = cxcywh2cs(bboxes, (orig_height, orig_width))
-            bboxcs[:, 2:] = bboxes[:, 2:]
             frames = seq_info['frames']
             frames = np.arange(frames.start, frames.stop)
             verts = all_verts[seqidx]
             pred_cam = all_pred_cam[seqidx]
+            pred_cam[:, 0] *= 1.2 * 1.2
             orig_cam = convert_crop_cam_to_orig_img(
-                pred_cam, bboxcs, orig_width, orig_height)
-            orig_cam[:, :2] *= 1.2
+                pred_cam, bboxes, orig_width, orig_height)
             for i, v, oc, f, bb in zip(imgs, verts, orig_cam, frames, bboxes):
                 mesh_img = renderer.render(i, v, oc)
                 mmcv.imwrite(mesh_img, f'{out_folder}/{vid_name}/{f:06d}.png')

@@ -17,15 +17,11 @@ from mesh import render_vids
 
 
 def main(args):
-    device = torch.device('cpu')
-    vid_folder = args.vid_folder
-    anno_folder = args.anno_folder
-    feat_folder = args.feat_folder
+    device = torch.device('cuda')
     out_folder = args.out_folder
 
     print('Loading climbing data ...')
-    c = data.ClimbingDataset(vid_folder, anno_folder,
-                             'test', seq_len=90, feat_folder=feat_folder)
+    c = data.ClimbingDataset('test', seq_len=90)
     print('Done')
 
     # load pretrained MEVA
@@ -66,7 +62,7 @@ def main(args):
             theta = output['theta'].cpu()
             pred_cam.append(theta[:, :, :3])
             pred_verts.append(output['verts'].cpu())
-            pred_pose.append(thets[:, :, 3:75])
+            pred_pose.append(theta[:, :, 3:75])
             pred_betas.append(theta[:, :, 75:])
             pred_joints3d.append(output['kp_3d'].cpu())
             norm_joints2d.append(output['kp_2d'].cpu())
@@ -97,19 +93,17 @@ def main(args):
     print('Saving results...')
     joblib.dump(output_dict, os.path.join(out_folder, "meva_output.pkl"))
 
-    print('Rendering videos...')
-    render_vids(c, output_dict, out_folder)
+    if args.render_vids:
+        print('Rendering videos...')
+        render_vids(c, output_dict, out_folder)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--vid_folder', type=str, help='input video folder')
-    parser.add_argument('--anno_folder', type=str,
-                        help='input annotations folder')
-    parser.add_argument('--feat_folder', type=str,
-                        help='input feature folder')
     parser.add_argument('--out_folder', type=str, help='output folder')
+    parser.add_argument('--render_vids', action='store_true',
+                        help='whether to render mesh videos')
 
     args = parser.parse_args()
 
