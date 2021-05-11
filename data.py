@@ -339,15 +339,9 @@ class ClimbingDataset(Dataset):
         return self.len
 
     def __getitem__(self, index):
-        """Gets a sequence of SMPL features."""
-        vid_idx, frames = self.get_indices(index)
-        name = stripped_names[vid_idx]
-        if name not in self.features:
-            self.load_features(name)
-        return self.features[name][frames]
+        return selg.get(index)
 
     def get(self, index):
-        """Gets more info about the sequence than __getitem__."""
         vid_idx, frames = self.get_indices(index)
         name = stripped_names[vid_idx]
         vid = self.vids[vid_idx]

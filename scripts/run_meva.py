@@ -55,8 +55,9 @@ def main(args):
         ], [], [], [], [], []
         start = time.time()
         for seqs in tqdm(dataloader.batch_sampler):
-            feats = torch.stack([torch.Tensor(c[seq])
-                                 for seq in seqs]).to(device)
+            target = torch.stack([torch.Tensor(c[seq])
+                                  for seq in seqs]).to(device)
+            feats = target['features']
             output = model(feats)[-1]
 
             theta = output['theta'].cpu()
