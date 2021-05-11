@@ -24,7 +24,6 @@ from meva.lib.vibe_loss import VIBELoss
 from meva.lib.vibe_trainer import Trainer
 
 
-
 def main(cfg):
     if cfg.SEED_VALUE >= 0:
         print(f'Seed value for the experiment {cfg.SEED_VALUE}')
@@ -68,7 +67,7 @@ def main(cfg):
         add_linear=cfg.MODEL.TGRU.ADD_LINEAR,
         bidirectional=cfg.MODEL.TGRU.BIDIRECTIONAL,
         use_residual=cfg.MODEL.TGRU.RESIDUAL,
-        cfg = cfg.VAE_CFG,
+        cfg=cfg.VAE_CFG,
     ).to(cfg.DEVICE)
 
     if cfg.TRAIN.PRETRAINED != '' and os.path.isfile(cfg.TRAIN.PRETRAINED):
@@ -87,7 +86,6 @@ def main(cfg):
         weight_decay=cfg.TRAIN.GEN_WD,
         momentum=cfg.TRAIN.GEN_MOMENTUM,
     )
-
 
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         gen_optimizer,

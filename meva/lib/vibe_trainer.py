@@ -116,7 +116,7 @@ class Trainer():
         pbar = tqdm(range(self.num_iters_per_epoch))
         for i in pbar:
             # Dirty solution to reset an iterator
-            print(1)
+
             target_2d = target_3d = None
             if self.train_2d_iter:
                 try:
@@ -126,7 +126,7 @@ class Trainer():
                     target_2d = next(self.train_2d_iter)
 
                 move_dict_to_device(target_2d, self.device)
-            print(2)
+
             if self.train_3d_iter:
                 try:
                     target_3d = next(self.train_3d_iter)
@@ -135,7 +135,7 @@ class Trainer():
                     target_3d = next(self.train_3d_iter)
 
                 move_dict_to_device(target_3d, self.device)
-            print(3)
+
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
                 inp = torch.cat(
@@ -147,12 +147,12 @@ class Trainer():
 
             timer['data'] = time.time() - start
             start = time.time()
-            print(4)
+
             preds = self.generator(inp)
-            print(5)
+
             timer['forward'] = time.time() - start
             start = time.time()
-            print(6)
+
             gen_loss, loss_dict = self.criterion(
                 generator_outputs=preds,
                 data_2d=target_2d,
@@ -161,7 +161,7 @@ class Trainer():
             # =======>
             timer['loss'] = time.time() - start
             start = time.time()
-            print(7)
+
             # <======= Backprop generator and discriminator
             self.gen_optimizer.zero_grad()
             gen_loss.backward()
@@ -176,7 +176,7 @@ class Trainer():
             # <======= Log training info
             # total_loss = gen_loss + motion_dis_loss
             total_loss = gen_loss
-            print(8)
+
             losses.update(total_loss.item(), inp.size(0))
 
             timer['backward'] = time.time() - start

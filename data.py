@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from skimage.util import view_as_windows
 from meva.utils import image_utils, kp_utils
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm, trange
 
 
 class VideoFrameFolder(ImageFolder):
@@ -292,7 +292,8 @@ class ClimbingDataset(Dataset):
                      '~/ucph-erda-home/hmr_features'),
                  seq_len=90,
                  overlap=0,
-                 debug=''):
+                 debug='',
+                 preload_all=False):
         super().__init__()
 
         self.video_folder = video_folder
@@ -336,11 +337,23 @@ class ClimbingDataset(Dataset):
         self.seq_lengths = np.array([s.shape[0] for s in self.seqs])
         self.len = sum(self.seq_lengths)
 
+        if preload_all:
+            for i in trange(len(self)):
+                v_idx, _ = self.get_indices(i)
+                name = stripped_names[v_idx]
+                if name not in self.labels:
+                    self.load_labels(name)
+                if name not in self.features:
+                    self.load_features(name)
+
     def __len__(self):
         return self.len
 
     def __getitem__(self, index):
-        return self.get(index)
+        res = self.get(index)
+        target = {'features': torch.Tensor(res['features']),
+                  'kp_2d': torch.Tensor(res['kp_2d'])}
+        return target
 
     def get(self, index):
         vid_idx, frames = self.get_indices(index)
@@ -355,6 +368,7 @@ class ClimbingDataset(Dataset):
             self.load_features(name)
         features = self.features[name][frames]
 
+        print('here')
         # crop and transfrom keypoints
         raw_imgs = np.array(vid[frames])
         crop_res = [image_utils.get_single_image_crop_wtrans(
