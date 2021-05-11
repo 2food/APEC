@@ -8,4 +8,4 @@ from .movi import MoVi
 from .threedpw import ThreeDPW
 from .posetrack import PoseTrack
 from .penn_action import PennAction
-from data import ClimbingDataset
+from .climb import Climb

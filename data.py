@@ -290,7 +290,7 @@ class ClimbingDataset(Dataset):
                  est_folder=os.path.expanduser('~/ucph-erda-home/mmpose_anno'),
                  feat_folder=os.path.expanduser(
                      '~/ucph-erda-home/hmr_features'),
-                 seqlen=90,
+                 seq_len=90,
                  overlap=0,
                  debug=''):
         super().__init__()
