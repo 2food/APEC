@@ -340,7 +340,7 @@ class ClimbingDataset(Dataset):
         return self.len
 
     def __getitem__(self, index):
-        return selg.get(index)
+        return self.get(index)
 
     def get(self, index):
         vid_idx, frames = self.get_indices(index)
