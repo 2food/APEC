@@ -7,7 +7,7 @@ import shutil
 import logging
 import numpy as np
 import os.path as osp
-from progress.bar import Bar
+# from progress.bar import Bar
 from tqdm import tqdm
 
 from meva.utils.video_config import MEVA_DATA_DIR
@@ -46,7 +46,6 @@ class Trainer():
         # Prepare dataloaders
         self.train_2d_loader, self.train_3d_loader, self.valid_loader = data_loaders
 
-
         self.train_2d_iter = self.train_3d_iter = None
 
         if self.train_2d_loader:
@@ -59,7 +58,6 @@ class Trainer():
         self.generator = generator
         self.gen_optimizer = gen_optimizer
 
-
         # Training parameters
         self.start_epoch = start_epoch
         self.end_epoch = end_epoch
@@ -71,14 +69,15 @@ class Trainer():
         self.debug_freq = debug_freq
         self.logdir = logdir
 
-
         self.performance_type = performance_type
         self.train_global_step = 0
         self.valid_global_step = 0
         self.epoch = 0
-        self.best_performance = float('inf') if performance_type == 'min' else -float('inf')
+        self.best_performance = float(
+            'inf') if performance_type == 'min' else -float('inf')
 
-        self.evaluation_accumulators = dict.fromkeys(['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts'])
+        self.evaluation_accumulators = dict.fromkeys(
+            ['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts'])
 
         self.num_iters_per_epoch = num_iters_per_epoch
 
@@ -95,6 +94,7 @@ class Trainer():
 
     def train(self):
         # Single epoch training routine
+        print('Starting training')
 
         losses = AverageMeter()
 
@@ -116,6 +116,7 @@ class Trainer():
         pbar = tqdm(range(self.num_iters_per_epoch))
         for i in pbar:
             # Dirty solution to reset an iterator
+            print(1)
             target_2d = target_3d = None
             if self.train_2d_iter:
                 try:
@@ -125,7 +126,7 @@ class Trainer():
                     target_2d = next(self.train_2d_iter)
 
                 move_dict_to_device(target_2d, self.device)
-
+            print(2)
             if self.train_3d_iter:
                 try:
                     target_3d = next(self.train_3d_iter)
@@ -134,11 +135,11 @@ class Trainer():
                     target_3d = next(self.train_3d_iter)
 
                 move_dict_to_device(target_3d, self.device)
-
-
+            print(3)
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
-                inp = torch.cat((target_2d['features'], target_3d['features']), dim=0).to(self.device)
+                inp = torch.cat(
+                    (target_2d['features'], target_3d['features']), dim=0).to(self.device)
             elif target_3d:
                 inp = target_3d['features'].to(self.device)
             else:
@@ -146,12 +147,12 @@ class Trainer():
 
             timer['data'] = time.time() - start
             start = time.time()
-
+            print(4)
             preds = self.generator(inp)
-
+            print(5)
             timer['forward'] = time.time() - start
             start = time.time()
-
+            print(6)
             gen_loss, loss_dict = self.criterion(
                 generator_outputs=preds,
                 data_2d=target_2d,
@@ -160,26 +161,27 @@ class Trainer():
             # =======>
             timer['loss'] = time.time() - start
             start = time.time()
-
+            print(7)
             # <======= Backprop generator and discriminator
             self.gen_optimizer.zero_grad()
             gen_loss.backward()
             self.gen_optimizer.step()
 
             # if self.train_global_step % self.dis_motion_update_steps == 0:
-                # self.dis_motion_optimizer.zero_grad()
-                # motion_dis_loss.backward()
-                # self.dis_motion_optimizer.step()
+            # self.dis_motion_optimizer.zero_grad()
+            # motion_dis_loss.backward()
+            # self.dis_motion_optimizer.step()
             # =======>
 
             # <======= Log training info
             # total_loss = gen_loss + motion_dis_loss
             total_loss = gen_loss
-
+            print(8)
             losses.update(total_loss.item(), inp.size(0))
 
             timer['backward'] = time.time() - start
-            timer['batch'] = timer['data'] + timer['forward'] + timer['loss'] + timer['backward']
+            timer['batch'] = timer['data'] + timer['forward'] + \
+                timer['loss'] + timer['backward']
             start = time.time()
 
             # summary_string = f'({i + 1}/{self.num_iters_per_epoch}) | Total: {bar.elapsed_td} | ' \
@@ -188,12 +190,14 @@ class Trainer():
 
             for k, v in loss_dict.items():
                 summary_string += f' | {k}: {v:.2f}'
-                self.writer.add_scalar('train_loss/'+k, v, global_step=self.train_global_step)
+                self.writer.add_scalar(
+                    'train_loss/' + k, v, global_step=self.train_global_step)
 
             # for k,v in timer.items():
             #     summary_string += ' | {}: {:.2f}'.format(k, v)
 
-            self.writer.add_scalar('train_loss/loss', total_loss.item(), global_step=self.train_global_step)
+            self.writer.add_scalar(
+                'train_loss/loss', total_loss.item(), global_step=self.train_global_step)
 
             if self.debug:
                 print('==== Visualize ====')
@@ -202,7 +206,8 @@ class Trainer():
                 dataset = 'spin'
                 vid_tensor = batch_visualize_vid_preds(video, preds[-1], target_3d.copy(),
                                                        vis_hmr=False, dataset=dataset)
-                self.writer.add_video('train-video', vid_tensor, global_step=self.train_global_step, fps=10)
+                self.writer.add_video(
+                    'train-video', vid_tensor, global_step=self.train_global_step, fps=10)
 
             self.train_global_step += 1
             # bar.suffix = summary_string
@@ -224,15 +229,16 @@ class Trainer():
 
         summary_string = ''
 
-        bar = Bar('Validation', fill='#', max=len(self.valid_loader))
+        # bar = Bar('Validation', fill='#', max=len(self.valid_loader))
 
         if self.evaluation_accumulators is not None:
-            for k,v in self.evaluation_accumulators.items():
+            for k, v in self.evaluation_accumulators.items():
                 self.evaluation_accumulators[k] = []
 
-        J_regressor = torch.from_numpy(np.load(osp.join(MEVA_DATA_DIR, 'J_regressor_h36m.npy'))).float()
+        J_regressor = torch.from_numpy(
+            np.load(osp.join(MEVA_DATA_DIR, 'J_regressor_h36m.npy'))).float()
 
-        for i, target in enumerate(self.valid_loader):
+        for i, target in tqdm(enumerate(self.valid_loader)):
 
             move_dict_to_device(target, self.device)
 
@@ -249,9 +255,9 @@ class Trainer():
                 pred_verts = preds[-1]['verts'].view(-1, 6890, 3).cpu().numpy()
                 target_theta = target['theta'].view(-1, 85).cpu().numpy()
 
-
                 self.evaluation_accumulators['pred_verts'].append(pred_verts)
-                self.evaluation_accumulators['target_theta'].append(target_theta)
+                self.evaluation_accumulators['target_theta'].append(
+                    target_theta)
 
                 self.evaluation_accumulators['pred_j3d'].append(pred_j3d)
                 self.evaluation_accumulators['target_j3d'].append(target_j3d)
@@ -262,20 +268,22 @@ class Trainer():
                 from meva.utils.vis import batch_visualize_vid_preds
                 video = target['video']
                 dataset = 'common'
-                vid_tensor = batch_visualize_vid_preds(video, preds[-1], target, vis_hmr=False, dataset=dataset)
-                self.writer.add_video('valid-video', vid_tensor, global_step=self.valid_global_step, fps=10)
+                vid_tensor = batch_visualize_vid_preds(
+                    video, preds[-1], target, vis_hmr=False, dataset=dataset)
+                self.writer.add_video(
+                    'valid-video', vid_tensor, global_step=self.valid_global_step, fps=10)
             # =============>
 
             batch_time = time.time() - start
 
-            summary_string = f'({i + 1}/{len(self.valid_loader)}) | batch: {batch_time * 10.0:.4}ms | ' \
-                             f'Total: {bar.elapsed_td} | ETA: {bar.eta_td:}'
+            # summary_string = f'({i + 1}/{len(self.valid_loader)}) | batch: {batch_time * 10.0:.4}ms | ' \
+            #                  f'Total: {bar.elapsed_td} | ETA: {bar.eta_td:}'
 
             self.valid_global_step += 1
-            bar.suffix = summary_string
-            bar.next()
+            # bar.suffix = summary_string
+            # bar.next()
 
-        bar.finish()
+        # bar.finish()
 
         logger.info(summary_string)
 
@@ -293,7 +301,8 @@ class Trainer():
             # log the learning rate
             for param_group in self.gen_optimizer.param_groups:
                 print(f'Learning rate {param_group["lr"]}')
-                self.writer.add_scalar('lr/gen_lr', param_group['lr'], global_step=self.epoch)
+                self.writer.add_scalar(
+                    'lr/gen_lr', param_group['lr'], global_step=self.epoch)
 
             # for param_group in self.dis_motion_optimizer.param_groups:
             #     print(f'Learning rate {param_group["lr"]}')
@@ -304,7 +313,7 @@ class Trainer():
             self.save_model(performance, epoch)
 
             # if performance > 200.0:
-                # exit(f'MPJPE error is {performance}, higher than 80.0. Exiting!...')
+            # exit(f'MPJPE error is {performance}, higher than 80.0. Exiting!...')
 
         self.writer.close()
 
@@ -329,7 +338,8 @@ class Trainer():
         if is_best:
             logger.info('Best performance achived, saving it!')
             self.best_performance = performance
-            shutil.copyfile(filename, osp.join(self.logdir, 'model_best.pth.tar'))
+            shutil.copyfile(filename, osp.join(
+                self.logdir, 'model_best.pth.tar'))
 
             with open(osp.join(self.logdir, 'best.txt'), 'w') as f:
                 f.write(str(float(performance)))
@@ -343,11 +353,11 @@ class Trainer():
             self.best_performance = checkpoint['performance']
 
             # if 'disc_motion_optimizer' in checkpoint.keys():
-                # self.motion_discriminator.load_state_dict(checkpoint['disc_motion_state_dict'])
-                # self.dis_motion_optimizer.load_state_dict(checkpoint['disc_motion_optimizer'])
+            # self.motion_discriminator.load_state_dict(checkpoint['disc_motion_state_dict'])
+            # self.dis_motion_optimizer.load_state_dict(checkpoint['disc_motion_optimizer'])
 
             logger.info(f"=> loaded checkpoint '{model_path}' "
-                  f"(epoch {self.start_epoch}, performance {self.best_performance})")
+                        f"(epoch {self.start_epoch}, performance {self.best_performance})")
         else:
             logger.info(f"=> no checkpoint found at '{model_path}'")
 
@@ -363,24 +373,28 @@ class Trainer():
         target_j3ds = torch.from_numpy(target_j3ds).float()
 
         print(f'Evaluating on {pred_j3ds.shape[0]} number of poses...')
-        pred_pelvis = (pred_j3ds[:,[2],:] + pred_j3ds[:,[3],:]) / 2.0
-        target_pelvis = (target_j3ds[:,[2],:] + target_j3ds[:,[3],:]) / 2.0
-
+        pred_pelvis = (pred_j3ds[:, [2], :] + pred_j3ds[:, [3], :]) / 2.0
+        target_pelvis = (target_j3ds[:, [2], :] + target_j3ds[:, [3], :]) / 2.0
 
         pred_j3ds -= pred_pelvis
         target_j3ds -= target_pelvis
         # Absolute error (MPJPE)
-        errors = torch.sqrt(((pred_j3ds - target_j3ds) ** 2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
-        S1_hat = batch_compute_similarity_transform_torch(pred_j3ds, target_j3ds)
-        errors_pa = torch.sqrt(((S1_hat - target_j3ds) ** 2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
+        errors = torch.sqrt(((pred_j3ds - target_j3ds) **
+                             2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
+        S1_hat = batch_compute_similarity_transform_torch(
+            pred_j3ds, target_j3ds)
+        errors_pa = torch.sqrt(
+            ((S1_hat - target_j3ds) ** 2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
         pred_verts = self.evaluation_accumulators['pred_verts']
         target_theta = self.evaluation_accumulators['target_theta']
 
         m2mm = 1000
 
-        pve = np.mean(compute_error_verts(target_theta=target_theta, pred_verts=pred_verts)) * m2mm
+        pve = np.mean(compute_error_verts(
+            target_theta=target_theta, pred_verts=pred_verts)) * m2mm
         accel = np.mean(compute_accel(pred_j3ds)) * m2mm
-        accel_err = np.mean(compute_error_accel(joints_pred=pred_j3ds, joints_gt=target_j3ds)) * m2mm
+        accel_err = np.mean(compute_error_accel(
+            joints_pred=pred_j3ds, joints_gt=target_j3ds)) * m2mm
         mpjpe = np.mean(errors) * m2mm
         pa_mpjpe = np.mean(errors_pa) * m2mm
 
@@ -393,10 +407,11 @@ class Trainer():
         }
 
         log_str = f'Epoch {self.epoch}, '
-        log_str += ' '.join([f'{k.upper()}: {v:.4f},'for k,v in eval_dict.items()])
+        log_str += ' '.join([f'{k.upper()}: {v:.4f},'for k,
+                             v in eval_dict.items()])
         logger.info(log_str)
 
-        for k,v in eval_dict.items():
+        for k, v in eval_dict.items():
             self.writer.add_scalar(f'error/{k}', v, global_step=self.epoch)
 
         return pa_mpjpe

@@ -38,7 +38,6 @@ dataclasses
 networkx
 imageio
 joblib
-progress
 mmdet@git+https://github.com/open-mmlab/mmdetection.git@v2.8.0
 mmpose@git+https://github.com/open-mmlab/mmpose.git
 mmtrack@git+https://github.com/open-mmlab/mmtracking.git@v0.5.1
