@@ -5,7 +5,7 @@ DEVICE: 'cuda'
 EXP_NAME: 'meva'
 OUTPUT_DIR: 'results/meva'
 VAE_CFG: "vae_rec_2"
-NUM_WORKERS: 4
+NUM_WORKERS: 1
 SEED_VALUE: 2
 LOSS:
   KP_2D_W: 300.0
