@@ -290,8 +290,9 @@ class ClimbingDataset(Dataset):
                  est_folder=os.path.expanduser('~/ucph-erda-home/mmpose_anno'),
                  feat_folder=os.path.expanduser(
                      '~/ucph-erda-home/hmr_features'),
-                 seq_len=90,
-                 overlap=0):
+                 seqlen=90,
+                 overlap=0,
+                 debug=''):
         super().__init__()
 
         self.video_folder = video_folder
