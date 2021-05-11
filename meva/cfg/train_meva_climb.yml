@@ -1,7 +1,7 @@
 DEBUG: false
 DEBUG_FREQ: 5
 LOGDIR: ''
-DEVICE: 'cpu'
+DEVICE: 'cuda'
 EXP_NAME: 'meva'
 OUTPUT_DIR: 'results/meva'
 VAE_CFG: "vae_rec_2"

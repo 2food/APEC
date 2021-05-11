@@ -1,7 +1,8 @@
 # This script is borrowed from https://github.com/mkocabas/VIBE
 # Adhere to their licence to use this script
 
-from torch.utils.data import ConcatDataset, DataLoader
+from torch.utils.data import ConcatDataset, DataLoader, TensorDataset
+import torch
 
 from meva.dataloaders import *
 
@@ -17,7 +18,8 @@ def get_data_loaders(cfg):
     def get_3d_datasets(dataset_names):
         datasets = []
         for dataset_name in dataset_names:
-            db = eval(dataset_name)(split='train', seqlen=cfg.DATASET.SEQLEN, debug=cfg.DEBUG)
+            db = eval(dataset_name)(split='train',
+                                    seqlen=cfg.DATASET.SEQLEN, debug=cfg.DEBUG)
             datasets.append(db)
         return ConcatDataset(datasets)
 
@@ -37,17 +39,19 @@ def get_data_loaders(cfg):
 
     # ===== 3D keypoint datasets =====
     train_3d_dataset_names = cfg.TRAIN.DATASETS_3D
-    train_3d_db = get_3d_datasets(train_3d_dataset_names)
-
-    train_3d_loader = DataLoader(
-        dataset=train_3d_db,
-        batch_size=data_3d_batch_size,
-        shuffle=True,
-        num_workers=cfg.NUM_WORKERS,
-    )
+    train_3d_loader = None
+    if train_3d_dataset_names:
+        train_3d_db = get_3d_datasets(train_3d_dataset_names)
+        train_3d_loader = DataLoader(
+            dataset=train_3d_db,
+            batch_size=data_3d_batch_size,
+            shuffle=True,
+            num_workers=cfg.NUM_WORKERS,
+        )
 
     # ===== Evaluation dataset =====
-    valid_db = eval(cfg.TRAIN.DATASET_EVAL)(split='test', seqlen=cfg.DATASET.SEQLEN, debug=cfg.DEBUG)
+    valid_db = eval(cfg.TRAIN.DATASET_EVAL)(
+        split='test', seqlen=cfg.DATASET.SEQLEN, debug=cfg.DEBUG)
 
     valid_loader = DataLoader(
         dataset=valid_db,
