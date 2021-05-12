@@ -193,7 +193,7 @@ class Trainer():
                 self.writer.add_scalar(
                     'train_loss/' + k, v, global_step=self.train_global_step)
 
-            # for k,v in timer.items():
+            # for k, v in timer.items():
             #     summary_string += ' | {}: {:.2f}'.format(k, v)
 
             self.writer.add_scalar(

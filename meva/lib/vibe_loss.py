@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from meva.utils.geometry import batch_rodrigues
 
+
 class VIBELoss(nn.Module):
     def __init__(
             self,
@@ -36,26 +37,32 @@ class VIBELoss(nn.Module):
             data_3d,
     ):
         # to reduce time dimension
-        reduce = lambda x: x.reshape((x.shape[0] * x.shape[1],) + x.shape[2:])
+        def reduce(x): return x.reshape(
+            (x.shape[0] * x.shape[1],) + x.shape[2:])
         # flatten for weight vectors
-        flatten = lambda x: x.reshape(-1)
+        def flatten(x): return x.reshape(-1)
         # accumulate all predicted thetas from IEF
-        accumulate_thetas = lambda x: torch.cat([output['theta'] for output in x],0)
+        def accumulate_thetas(x): return torch.cat(
+            [output['theta'] for output in x], 0)
 
-        if data_2d:
+        if data_2d and data_3d:
             sample_2d_count = data_2d['kp_2d'].shape[0]
             real_2d = torch.cat((data_2d['kp_2d'], data_3d['kp_2d']), 0)
+        elif data_2d:
+            sample_2d_count = data_2d['kp_2d'].shape[0]
+            real_2d = data_2d['kp_2d']
         else:
             sample_2d_count = 0
             real_2d = data_3d['kp_2d']
 
         real_2d = reduce(real_2d)
 
-        real_3d = reduce(data_3d['kp_3d'])
-        data_3d_theta = reduce(data_3d['theta'])
+        if data_3d:
+            real_3d = reduce(data_3d['kp_3d'])
+            data_3d_theta = reduce(data_3d['theta'])
 
-        w_3d = data_3d['w_3d'].type(torch.bool)
-        w_smpl = data_3d['w_smpl'].type(torch.bool)
+            w_3d = data_3d['w_3d'].type(torch.bool)
+            w_smpl = data_3d['w_smpl'].type(torch.bool)
 
         total_predict_thetas = accumulate_thetas(generator_outputs)
 
@@ -70,29 +77,35 @@ class VIBELoss(nn.Module):
         pred_j2d = reduce(preds['kp_2d'])
         pred_j3d = reduce(pred_j3d)
 
-        w_3d = flatten(w_3d)
-        w_smpl = flatten(w_smpl)
+        if data_3d:
+            w_3d = flatten(w_3d)
+            w_smpl = flatten(w_smpl)
 
-
-        pred_theta = pred_theta[w_smpl]
-        pred_j3d = pred_j3d[w_3d]
-        data_3d_theta = data_3d_theta[w_smpl]
-        real_3d = real_3d[w_3d]
+            pred_theta = pred_theta[w_smpl]
+            pred_j3d = pred_j3d[w_3d]
+            data_3d_theta = data_3d_theta[w_smpl]
+            real_3d = real_3d[w_3d]
 
         # <======== Generator Loss
-        loss_kp_2d =  self.keypoint_loss(pred_j2d, real_2d, openpose_weight=1., gt_weight=1.) * self.e_loss_weight
-        loss_kp_3d = self.keypoint_3d_loss(pred_j3d, real_3d)
-        loss_kp_3d = loss_kp_3d * self.e_3d_loss_weight
-
-        real_shape, pred_shape = data_3d_theta[:, 75:], pred_theta[:, 75:]
-        real_pose, pred_pose = data_3d_theta[:, 3:75], pred_theta[:, 3:75]
+        loss_kp_2d = self.keypoint_loss(
+            pred_j2d, real_2d, openpose_weight=1., gt_weight=1.) * self.e_loss_weight
 
         loss_dict = {
             'loss_kp_2d': loss_kp_2d,
-            'loss_kp_3d': loss_kp_3d,
         }
+
+        if data_3d:
+            loss_kp_3d = self.keypoint_3d_loss(pred_j3d, real_3d)
+            loss_kp_3d = loss_kp_3d * self.e_3d_loss_weight
+
+            real_shape, pred_shape = data_3d_theta[:, 75:], pred_theta[:, 75:]
+            real_pose, pred_pose = data_3d_theta[:, 3:75], pred_theta[:, 3:75]
+
+            loss_dict['loss_kp_3d'] = loss_kp_3d
+
         if pred_theta.shape[0] > 0:
-            loss_pose, loss_shape = self.smpl_losses(pred_pose, pred_shape, real_pose, real_shape)
+            loss_pose, loss_shape = self.smpl_losses(
+                pred_pose, pred_shape, real_pose, real_shape)
             loss_shape = loss_shape * self.e_shape_loss_weight
             loss_pose = loss_pose * self.e_pose_loss_weight
             loss_dict['loss_shape'] = loss_shape
@@ -111,7 +124,8 @@ class VIBELoss(nn.Module):
         conf = gt_keypoints_2d[:, :, -1].unsqueeze(-1).clone()
         conf[:, :25] *= openpose_weight
         conf[:, 25:] *= gt_weight
-        loss = (conf * self.criterion_keypoints(pred_keypoints_2d, gt_keypoints_2d[:, :, :-1])).mean()
+        loss = (conf * self.criterion_keypoints(pred_keypoints_2d,
+                                                gt_keypoints_2d[:, :, :-1])).mean()
         return loss
 
     def keypoint_3d_loss(self, pred_keypoints_3d, gt_keypoints_3d):
@@ -126,12 +140,14 @@ class VIBELoss(nn.Module):
         # gt_keypoints_3d = gt_keypoints_3d[:, :, :-1].clone()
         # gt_keypoints_3d = gt_keypoints_3d
         # conf = conf
-        
+
         pred_keypoints_3d = pred_keypoints_3d
         if len(gt_keypoints_3d) > 0:
-            gt_pelvis = (gt_keypoints_3d[:, 2,:] + gt_keypoints_3d[:, 3,:]) / 2
+            gt_pelvis = (gt_keypoints_3d[:, 2, :] +
+                         gt_keypoints_3d[:, 3, :]) / 2
             gt_keypoints_3d = gt_keypoints_3d - gt_pelvis[:, None, :]
-            pred_pelvis = (pred_keypoints_3d[:, 2,:] + pred_keypoints_3d[:, 3,:]) / 2
+            pred_pelvis = (
+                pred_keypoints_3d[:, 2, :] + pred_keypoints_3d[:, 3, :]) / 2
             pred_keypoints_3d = pred_keypoints_3d - pred_pelvis[:, None, :]
             # print(conf.shape, pred_keypoints_3d.shape, gt_keypoints_3d.shape)
             # return (conf * self.criterion_keypoints(pred_keypoints_3d, gt_keypoints_3d)).mean()
@@ -140,13 +156,17 @@ class VIBELoss(nn.Module):
             return torch.FloatTensor(1).fill_(0.).to(self.device)
 
     def smpl_losses(self, pred_rotmat, pred_betas, gt_pose, gt_betas):
-        pred_rotmat_valid = batch_rodrigues(pred_rotmat.reshape(-1,3)).reshape(-1, 24, 3, 3)
-        gt_rotmat_valid = batch_rodrigues(gt_pose.reshape(-1,3)).reshape(-1, 24, 3, 3)
+        pred_rotmat_valid = batch_rodrigues(
+            pred_rotmat.reshape(-1, 3)).reshape(-1, 24, 3, 3)
+        gt_rotmat_valid = batch_rodrigues(
+            gt_pose.reshape(-1, 3)).reshape(-1, 24, 3, 3)
         pred_betas_valid = pred_betas
         gt_betas_valid = gt_betas
         if len(pred_rotmat_valid) > 0:
-            loss_regr_pose = self.criterion_regr(pred_rotmat_valid, gt_rotmat_valid)
-            loss_regr_betas = self.criterion_regr(pred_betas_valid, gt_betas_valid)
+            loss_regr_pose = self.criterion_regr(
+                pred_rotmat_valid, gt_rotmat_valid)
+            loss_regr_betas = self.criterion_regr(
+                pred_betas_valid, gt_betas_valid)
         else:
             loss_regr_pose = torch.FloatTensor(1).fill_(0.).to(self.device)
             loss_regr_betas = torch.FloatTensor(1).fill_(0.).to(self.device)
@@ -169,7 +189,8 @@ def batch_adv_disc_l2_loss(real_disc_value, fake_disc_value):
     '''
     ka = real_disc_value.shape[0]
     kb = fake_disc_value.shape[0]
-    lb, la = torch.sum(fake_disc_value ** 2) / kb, torch.sum((real_disc_value - 1) ** 2) / ka
+    lb, la = torch.sum(fake_disc_value ** 2) / \
+        kb, torch.sum((real_disc_value - 1) ** 2) / ka
     return la, lb, la + lb
 
 
@@ -197,8 +218,8 @@ def batch_adv_disc_wasserstein_loss(real_disc_value, fake_disc_value):
 
 
 def batch_smooth_pose_loss(pred_theta):
-    pose = pred_theta[:,:,3:75]
-    pose_diff = pose[:,1:,:] - pose[:,:-1,:]
+    pose = pred_theta[:, :, 3:75]
+    pose_diff = pose[:, 1:, :] - pose[:, :-1, :]
     return torch.mean(pose_diff).abs()
 
 

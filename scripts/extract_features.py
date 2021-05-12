@@ -13,7 +13,8 @@ def main(args):
     out_folder = args.out_folder
 
     # read dataset with seq_len=1 to ensure that all frames have features
-    c = data.ClimbingDataset('all', feat_folder=None, seq_len=1)
+    c = data.ClimbingDataset('all', feat_folder=None,
+                             seq_len=1, preload_all=True)
 
     hmr = get_pretrained_hmr()
     hmr.eval()

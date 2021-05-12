@@ -350,12 +350,15 @@ class ClimbingDataset(Dataset):
         return self.len
 
     def __getitem__(self, index):
-        res = self.get(index)
-        target = {'features': torch.Tensor(res['features']),
-                  'kp_2d': torch.Tensor(res['kp_2d'])}
-        return target
+        if isinstance(index, slice):
+            return [self[i] for i in range(index.start or 0, index.stop, index.step or 1)]
 
-    def get(self, index):
+        res = self.get(index, get_imgs=False)
+        res['features'] = torch.Tensor(res['features'])
+        res['kp_2d'] = torch.Tensor(res['kp_2d'])
+        return res
+
+    def get(self, index, get_imgs=True):
         vid_idx, frames = self.get_indices(index)
         name = stripped_names[vid_idx]
         vid = self.vids[vid_idx]
@@ -368,14 +371,23 @@ class ClimbingDataset(Dataset):
             self.load_features(name)
         features = self.features[name][frames]
 
-        print('here')
-        # crop and transfrom keypoints
         raw_imgs = np.array(vid[frames])
+        # if get_imgs:
+        #     raw_imgs = np.array(vid[frames])
+        # else:
+        #     imgs_shape = (
+        #         self.seq_len, vid.resolution[1], vid.resolution[0], 3)
+        #     raw_imgs = np.empty(imgs_shape)
+
+        # crop and transfrom keypoints
         crop_res = [image_utils.get_single_image_crop_wtrans(
             img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
         norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
         norm_imgs, kp_2d = torch.stack(norm_imgs), np.stack(kp_2d)
         trans, inv_trans = np.stack(trans), np.stack(inv_trans)
+
+        frame_range = np.arange(
+            frames.start or 0, frames.stop, frames.step or 1)
 
         target = {'raw_imgs': raw_imgs,
                   'norm_imgs': norm_imgs,
@@ -383,7 +395,7 @@ class ClimbingDataset(Dataset):
                   'raw_kp_2d': labels,
                   'kp_2d': kp_2d,
                   'vid_idx': vid_idx,
-                  'frames': frames,
+                  'frames': frame_range,
                   'bboxes': bboxes,
                   'trans': trans,
                   'inv_trans': inv_trans}
@@ -433,9 +445,6 @@ class ClimbingDataset(Dataset):
         features = []
         if self.feat_folder is not None:
             # print(f'Reading features for {name}')
-            feat_res = np.load(
+            features = np.load(
                 f'{self.feat_folder}/{name}.npy', allow_pickle=True)
-            features = [r['features'] for r in feat_res]
-            features = np.stack(features)
-
         self.features[name] = features
