@@ -9,8 +9,8 @@ import subprocess
 sys.path.append(os.getcwd())
 
 from collections import defaultdict
-from utils.pose import interpolated_traj_new
-from h36m.utils.h36m_global import *
+# from utils.pose import interpolated_traj_new
+# from h36m.utils.h36m_global import *
 
 
 def save_pose_data(subject_id):
@@ -21,7 +21,6 @@ def save_pose_data(subject_id):
     cam_file = f'{h36m_folder}/annotations/Human36M_subject{subject_id}_camera.json'
     joint_file = f'{h36m_folder}/annotations/Human36M_subject{subject_id}_joint_3d.json'
 
-    cam_file = f'{h36m_folder}/annotations/Human36M_subject{subject_id}_camera.json'
     with open(cam_file) as f:
         cam_dict = json.load(f)
     for cam_id in range(1, 5):
@@ -38,13 +37,15 @@ def save_pose_data(subject_id):
 
     video_files = sorted(glob.glob(f'{video_dir}/[!_]*'))
     assert len(video_files) == 120
-    action_names = [os.path.basename(x).split('.')[0] for x in video_files[::4]]
+    action_names = [os.path.basename(x).split('.')[0]
+                    for x in video_files[::4]]
     action_names = get_ordered_action_names(action_names, subject_id)
 
     for action_id in range(2, 17):
         for sub_action in range(1, 3):
             seq = defaultdict(list)
-            seq['action_name'] = action_names[2 * (action_id - 2) + (sub_action - 1)]
+            seq['action_name'] = action_names[2 *
+                                              (action_id - 2) + (sub_action - 1)]
             print(seq['action_name'])
             # get gt
             gt_jpos_dict = joint[str(action_id)][str(sub_action)]
@@ -57,26 +58,31 @@ def save_pose_data(subject_id):
             frames = np.array(sorted([int(x) for x in smpl_param_dict.keys()]))
             diff = np.diff(frames)
             ind = np.where(diff != 5)[0]
-            print(f'irregular frames:', [(x, y) for x, y in zip(ind, diff[ind])])
+            print(f'irregular frames:', [(x, y)
+                                         for x, y in zip(ind, diff[ind])])
             for i in sorted([int(x) for x in smpl_param_dict.keys()]):
                 key = str(i)
-                seq['fitted_jpos'].append(np.array(smpl_param_dict[key]['fitted_3d_pose']) * 0.001)
+                seq['fitted_jpos'].append(
+                    np.array(smpl_param_dict[key]['fitted_3d_pose']) * 0.001)
                 seq['trans'].append(np.array(smpl_param_dict[key]['trans'][0]))
                 seq['pose'].append(np.array(smpl_param_dict[key]['pose']))
                 seq['shape'].append(np.array(smpl_param_dict[key]['shape']))
-            
+
             for key in ['gt_jpos', 'fitted_jpos', 'trans', 'pose', 'shape']:
                 seq[key] = np.stack(seq[key])
 
             for key in ['fitted_jpos', 'trans', 'pose', 'shape']:
-                seq[key]  = interpolated_traj_new(seq[key], frames * 0.02, np.arange(seq['gt_jpos'].shape[0]) * 0.04, 'expmap' if key == 'pose' else 'lin')
+                seq[key] = interpolated_traj_new(seq[key], frames * 0.02, np.arange(
+                    seq['gt_jpos'].shape[0]) * 0.04, 'expmap' if key == 'pose' else 'lin')
 
             seq['len'] = seq['gt_jpos'].shape[0]
             subject_data['action_seq'].append(seq)
 
-    subject_data['len'] = sum([seq['len'] for seq in subject_data['action_seq']])
-    subject_data['mean_shape'] = np.concatenate([seq['shape'] for seq in subject_data['action_seq']]).mean(axis=0)
-    
+    subject_data['len'] = sum([seq['len']
+                               for seq in subject_data['action_seq']])
+    subject_data['mean_shape'] = np.concatenate(
+        [seq['shape'] for seq in subject_data['action_seq']]).mean(axis=0)
+
     out_file = f'{h36m_out_folder}/poses/S{subject_id}.pkl'
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
     pickle.dump(subject_data, open(out_file, 'wb'))
@@ -91,7 +97,8 @@ def save_bbox_data(subject_id):
 
     video_files = sorted(glob.glob(f'{video_dir}/[!_]*'))
     assert len(video_files) == 120
-    action_names = [os.path.basename(x).split('.')[0] for x in video_files[::4]]
+    action_names = [os.path.basename(x).split('.')[0]
+                    for x in video_files[::4]]
     action_names = get_ordered_action_names(action_names, subject_id)
 
     with open(data_file) as f:
@@ -106,7 +113,8 @@ def save_bbox_data(subject_id):
         if frame_id % 2 == 1:
             continue
         cam_id = info['cam_idx'] - 1
-        action_name = action_names[2 * (info['action_idx'] - 2) + (info['subaction_idx'] - 1)]
+        action_name = action_names[2 *
+                                   (info['action_idx'] - 2) + (info['subaction_idx'] - 1)]
         seq_name = f'{action_name}_cam{cam_id}'
         assert frame_id - last_frame_id[seq_name] == 2
         last_frame_id[seq_name] = frame_id
@@ -129,7 +137,8 @@ def save_video_data(subject_id, export_video=False, export_frame=False, export_v
     video_dir = f'{h36m_folder}/S{subject_id}/Videos'
     video_files = sorted(glob.glob(f'{video_dir}/[!_]*'))
     assert len(video_files) == 120
-    video_names = [os.path.splitext(os.path.basename(x))[0] for x in video_files]
+    video_names = [os.path.splitext(os.path.basename(x))[0]
+                   for x in video_files]
 
     for video_file, video_name in zip(video_files, video_names):
         action_name, cam_name = tuple(video_name.split('.')[:2])
@@ -139,14 +148,15 @@ def save_video_data(subject_id, export_video=False, export_frame=False, export_v
         out_file = f'{h36m_out_folder}/videos/S{subject_id}/{action_name}_cam{cam_id}.mp4'
         if export_frame:
             os.makedirs(frame_dir, exist_ok=True)
-            cmd = ['ffmpeg', '-i', video_file, '-r', '25', '-start_number', '0', f'{frame_dir}/%04d.png']
+            cmd = ['ffmpeg', '-i', video_file, '-r', '25',
+                   '-start_number', '0', f'{frame_dir}/%04d.png']
             subprocess.call(cmd)
         # export frames
         if export_video:
             if not (args.skip and os.path.exists(out_file)):
                 os.makedirs(os.path.dirname(out_file), exist_ok=True)
                 cmd = ['ffmpeg', '-y', '-r', '30', '-f', 'image2', '-start_number', '0', '-i',
-                    f'{frame_dir}/%04d.png', '-vcodec', 'libx264', '-crf', '8', '-pix_fmt', 'yuv420p', out_file]
+                       f'{frame_dir}/%04d.png', '-vcodec', 'libx264', '-crf', '8', '-pix_fmt', 'yuv420p', out_file]
                 subprocess.call(cmd)
         # export vibe
         if export_vibe:
@@ -155,11 +165,11 @@ def save_video_data(subject_id, export_video=False, export_frame=False, export_v
             if not (args.skip and os.path.exists(f'{out_dir}/{action_name}_cam{cam_id}/meva_output.pkl')):
                 os.makedirs(out_dir, exist_ok=True)
                 cmd = ['/mnt/home/yeyuan/anaconda3/envs/vibe-env/bin/python', '/mnt/home/yeyuan/repo/VIBE/demo.py',
-                    '--vid_file', out_file, '--output_folder', out_dir, '--no_render', '--bbox_scale', str(args.bbox_scale), '--shift', str(args.shift)]
+                       '--vid_file', out_file, '--output_folder', out_dir, '--no_render', '--bbox_scale', str(args.bbox_scale), '--shift', str(args.shift)]
                 subprocess.call(cmd, cwd=r'/mnt/home/yeyuan/repo/VIBE')
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--subjects', default="1,5,6,7,8,9,11")

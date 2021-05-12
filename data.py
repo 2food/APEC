@@ -354,9 +354,9 @@ class ClimbingDataset(Dataset):
             return [self[i] for i in range(index.start or 0, index.stop, index.step or 1)]
 
         res = self.get(index, get_imgs=False)
-        res['features'] = torch.Tensor(res['features'])
-        res['kp_2d'] = torch.Tensor(res['kp_2d'])
-        return res
+        target = {'features': torch.Tensor(res['features']),
+                  'kp_2d': torch.Tensor(res['kp_2d'])}
+        return target
 
     def get(self, index, get_imgs=True):
         vid_idx, frames = self.get_indices(index)
