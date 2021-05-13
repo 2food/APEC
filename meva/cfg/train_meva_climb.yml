@@ -25,7 +25,7 @@ TRAIN:
   START_EPOCH: 0
   END_EPOCH: 100
   LR_PATIENCE: 5
-  DATA_2D_RATIO: 0.6
+  DATA_2D_RATIO: 1
   DATASETS_2D:
     - 'Climb'
   # - 'Insta'
