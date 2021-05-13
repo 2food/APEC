@@ -34,7 +34,7 @@ def main(args):
     cfg = update_cfg(config_file)
 
     device = torch.device(cfg.DEVICE)
-    batch_size = cfg.DATASET.BATCH_SIZE
+    batch_size = cfg.TRAIN.BATCH_SIZE
 
     model = MEVA(
         n_layers=cfg.MODEL.TGRU.NUM_LAYERS,
