@@ -14,22 +14,28 @@ import torch
 import time
 from tqdm import tqdm
 from mesh import render_vids
+import utils
 
 
 def main(args):
-    device = torch.device('cuda')
     out_folder = args.out_folder
+    cfg = args.cfg
+
+    utils.makedirs_ifno([out_folder])
 
     print('Loading climbing data ...')
-    c = data.ClimbingDataset('test', seq_len=90)
+    c = data.ClimbingDataset('all', seq_len=90, preload_all=True)
     print('Done')
 
     # load pretrained MEVA
     print('Loading MEVA model ...')
-    pretrained_file = f"results/meva/train_meva_2/model_best.pth.tar"
-    config_file = f"meva/cfg/train_meva_2.yml"
+    pretrained_file = f"results/meva/{cfg}/model_best.pth.tar"
+    config_file = f"meva/cfg/{cfg}.yml"
     cfg = update_cfg(config_file)
-    batch_size = 6
+
+    device = torch.device(cfg.DEVICE)
+    batch_size = cfg.DATASET.BATCH_SIZE
+
     model = MEVA(
         n_layers=cfg.MODEL.TGRU.NUM_LAYERS,
         batch_size=batch_size,
@@ -48,16 +54,15 @@ def main(args):
     print('Done')
 
     dataloader = DataLoader(
-        c, batch_size=batch_size, num_workers=16, shuffle=False)
+        c, batch_size=batch_size, num_workers=6, shuffle=False)
 
     with torch.no_grad():
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
         start = time.time()
-        for seqs in tqdm(dataloader.batch_sampler):
-            target = torch.stack([torch.Tensor(c[seq])
-                                  for seq in seqs]).to(device)
-            feats = target['features']
+        for target in tqdm(iter(dataloader)):
+
+            feats = target['features'].to(device)
             output = model(feats)[-1]
 
             theta = output['theta'].cpu()
@@ -102,6 +107,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--cfg', type=str, help='config file')
     parser.add_argument('--out_folder', type=str, help='output folder')
     parser.add_argument('--render_vids', action='store_true',
                         help='whether to render mesh videos')
