@@ -59,6 +59,7 @@ def main(args):
     with torch.no_grad():
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
+        vid_indices, frames = [], []
         start = time.time()
         for target in tqdm(iter(dataloader)):
 
@@ -72,6 +73,8 @@ def main(args):
             pred_betas.append(theta[:, :, 75:])
             pred_joints3d.append(output['kp_3d'].cpu())
             norm_joints2d.append(output['kp_2d'].cpu())
+            vid_indices.append(target['vid_idx'])
+            frames.append(target['frames'])
         finish = time.time()
         total_time = finish - start
         pred_cam = torch.cat(pred_cam, dim=0)
@@ -80,6 +83,8 @@ def main(args):
         pred_betas = torch.cat(pred_betas, dim=0)
         pred_joints3d = torch.cat(pred_joints3d, dim=0)
         norm_joints2d = torch.cat(norm_joints2d, dim=0)
+        vid_indices = torch.cat(vid_indices, dim=0)
+        frames = torch.cat(frames, dim=0)
 
     # ========= Save results to a pickle file ========= #
     pred_cam = pred_cam.numpy()
@@ -88,6 +93,8 @@ def main(args):
     pred_betas = pred_betas.numpy()
     pred_joints3d = pred_joints3d.numpy()
     norm_joints2d = norm_joints2d.numpy()
+    vid_indices = vid_indices.numpy()
+    frames = frames.numpy()
 
     output_dict = {'pred_cam': pred_cam,
                    'verts': pred_verts,
@@ -95,7 +102,9 @@ def main(args):
                    'betas': pred_betas,
                    'joints3d': pred_joints3d,
                    'joints2d': norm_joints2d,
-                   'time': total_time}
+                   'time': total_time,
+                   'vid_idx': vid_indices,
+                   'frames': frames}
     print('Saving results...')
     joblib.dump(output_dict, os.path.join(out_folder, "meva_output.pkl"))
 
