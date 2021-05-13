@@ -12,6 +12,8 @@ from tqdm import tqdm
 
 from meva.utils.video_config import MEVA_DATA_DIR
 from meva.utils.vibe_utils import move_dict_to_device, AverageMeter
+from meva.utils import kp_utils
+import utils
 
 from meva.utils.eval_utils import (
     compute_accel,
@@ -77,7 +79,7 @@ class Trainer():
             'inf') if performance_type == 'min' else -float('inf')
 
         self.evaluation_accumulators = dict.fromkeys(
-            ['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts'])
+            ['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts', 'pred_j2d', 'target_j2d', 'target_bboxes', 'target_inv_trans'])
 
         self.num_iters_per_epoch = num_iters_per_epoch
 
@@ -248,19 +250,46 @@ class Trainer():
 
                 preds = self.generator(inp, J_regressor=J_regressor)
 
-                # convert to 14 keypoint format for evaluation
-                n_kp = preds[-1]['kp_3d'].shape[-2]
-                pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
-                target_j3d = target['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
-                pred_verts = preds[-1]['verts'].view(-1, 6890, 3).cpu().numpy()
-                target_theta = target['theta'].view(-1, 85).cpu().numpy()
+                # if 3d val set
+                if 'kp_3d' in target:
+                    # convert to 14 keypoint format for evaluation
+                    n_kp = preds[-1]['kp_3d'].shape[-2]
+                    pred_j3d = preds[-1]['kp_3d'].view(-1,
+                                                       n_kp, 3).cpu().numpy()
+                    target_j3d = target['kp_3d'].view(-1,
+                                                      n_kp, 3).cpu().numpy()
+                    pred_verts = preds[-1]['verts'].view(-1,
+                                                         6890, 3).cpu().numpy()
+                    target_theta = target['theta'].view(-1, 85).cpu().numpy()
 
-                self.evaluation_accumulators['pred_verts'].append(pred_verts)
-                self.evaluation_accumulators['target_theta'].append(
-                    target_theta)
+                    self.evaluation_accumulators['pred_verts'].append(
+                        pred_verts)
+                    self.evaluation_accumulators['target_theta'].append(
+                        target_theta)
 
-                self.evaluation_accumulators['pred_j3d'].append(pred_j3d)
-                self.evaluation_accumulators['target_j3d'].append(target_j3d)
+                    self.evaluation_accumulators['pred_j3d'].append(pred_j3d)
+                    self.evaluation_accumulators['target_j3d'].append(
+                        target_j3d)
+
+                # if climb val set
+                if 'bboxes' in target and 'inv_trans' in target:
+                    n_kp = len(kp_utils.get_common_joint_names())
+                    pred_j2d = preds[-1]['kp_2d'].view(-1,
+                                                       n_kp, 2).cpu().numpy()
+                    pred_j2d = kp_utils.convert_kps(pred_j2d, 'common', 'spin')
+                    n_kp = len(kp_utils.get_spin_joint_names())
+                    target_j2d = target['kp_2d'].view(-1,
+                                                      n_kp, 3).cpu().numpy()
+                    target_bboxes = target['bboxes'].view(-1, 4).cpu().numpy()
+                    target_inv_trans = target['inv_trans'].view(
+                        -1, 2, 3).cpu().numpy()
+                    self.evaluation_accumulators['pred_j2d'].append(pred_j2d)
+                    self.evaluation_accumulators['target_j2d'].append(
+                        target_j2d)
+                    self.evaluation_accumulators['target_bboxes'].append(
+                        target_bboxes)
+                    self.evaluation_accumulators['target_inv_trans'].append(
+                        target_inv_trans)
             # =============>
 
             # <============= DEBUG
@@ -362,9 +391,45 @@ class Trainer():
             logger.info(f"=> no checkpoint found at '{model_path}'")
 
     def evaluate(self):
-
         for k, v in self.evaluation_accumulators.items():
-            self.evaluation_accumulators[k] = np.vstack(v)
+            if v:
+                self.evaluation_accumulators[k] = np.vstack(v)
+        if self.evaluation_accumulators['pred_j3d']:
+            return self.evaluate3d()
+        else:
+            return self.evaluate2d()
+
+    def evaluate2d(self):
+        pred_j2d = torch.Tensor(self.evaluation_accumulators['pred_j2d'])
+        target_j2d = torch.Tensor(self.evaluation_accumulators['target_j2d'])
+        target_bboxes = torch.Tensor(
+            self.evaluation_accumulators['target_bboxes'])
+        target_inv_trans = torch.Tensor(
+            self.evaluation_accumulators['target_inv_trans'])
+
+        with torch.no_grad():
+            kp_loss = self.criterion.keypoint_loss(
+                pred_j2d, target_j2d, openpose_weight=1., gt_weight=1.)
+
+        scale = target_bboxes[:, -1]
+        oks_score = utils.oks(pred_j2d, target_j2d, scale, target_inv_trans)
+
+        eval_dict = {
+            'kp_loss': kp_loss,
+            'oks_score': oks_score.mean()
+        }
+
+        log_str = f'Epoch {self.epoch}, '
+        log_str += ' '.join([f'{k.upper()}: {v:.4f},'for k,
+                             v in eval_dict.items()])
+        logger.info(log_str)
+
+        for k, v in eval_dict.items():
+            self.writer.add_scalar(f'error/{k}', v, global_step=self.epoch)
+
+        return kp_loss
+
+    def evaluate3d(self):
 
         pred_j3ds = self.evaluation_accumulators['pred_j3d']
         target_j3ds = self.evaluation_accumulators['target_j3d']
@@ -379,8 +444,8 @@ class Trainer():
         pred_j3ds -= pred_pelvis
         target_j3ds -= target_pelvis
         # Absolute error (MPJPE)
-        errors = torch.sqrt(((pred_j3ds - target_j3ds) **
-                             2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
+        errors = torch.sqrt(
+            ((pred_j3ds - target_j3ds)**2).sum(dim=-1)).mean(dim=-1).cpu().numpy()
         S1_hat = batch_compute_similarity_transform_torch(
             pred_j3ds, target_j3ds)
         errors_pa = torch.sqrt(

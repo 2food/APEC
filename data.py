@@ -352,10 +352,9 @@ class ClimbingDataset(Dataset):
     def __getitem__(self, index):
         if isinstance(index, slice):
             return [self[i] for i in range(index.start or 0, index.stop, index.step or 1)]
-
-        res = self.get(index, get_imgs=False)
-        target = {'features': torch.Tensor(res['features']),
-                  'kp_2d': torch.Tensor(res['kp_2d'])}
+        target = self.get(index, get_imgs=False)
+        target['features'] = torch.Tensor(target['features']).float()
+        target['kp_2d'] = torch.Tensor(target['kp_2d']).float()
         return target
 
     def get(self, index, get_imgs=True):
@@ -370,24 +369,27 @@ class ClimbingDataset(Dataset):
         if name not in self.features:
             self.load_features(name)
         features = self.features[name][frames]
-
-        raw_imgs = np.array(vid[frames])
-        # if get_imgs:
-        #     raw_imgs = np.array(vid[frames])
-        # else:
-        #     imgs_shape = (
-        #         self.seq_len, vid.resolution[1], vid.resolution[0], 3)
-        #     raw_imgs = np.empty(imgs_shape)
-
-        # crop and transfrom keypoints
-        crop_res = [image_utils.get_single_image_crop_wtrans(
-            img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
-        norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
-        norm_imgs, kp_2d = torch.stack(norm_imgs), np.stack(kp_2d)
-        trans, inv_trans = np.stack(trans), np.stack(inv_trans)
-
         frame_range = np.arange(
             frames.start or 0, frames.stop, frames.step or 1)
+
+        # crop and transfrom keypoints
+        if get_imgs:
+            raw_imgs = np.array(vid[frames])
+            crop_res = [image_utils.get_single_image_crop_wtrans(
+                img, bbox, kps, scale=1.2) for img, bbox, kps in zip(raw_imgs.copy(), bboxes.copy(), labels.copy())]
+            norm_imgs, _, kp_2d, trans, inv_trans = zip(*crop_res)
+            norm_imgs = torch.stack(norm_imgs)
+        else:
+            crop_res = [image_utils.get_single_kp_crop_wtrans(
+                bbox, kps, scale=1.2) for bbox, kps in zip(bboxes.copy(), labels.copy())]
+            kp_2d, trans, inv_trans = zip(*crop_res)
+            raw_imgs, norm_imgs = [], []
+
+        kp_2d = np.stack(kp_2d).astype(np.float32)
+        trans, inv_trans = np.stack(trans).astype(
+            np.float32), np.stack(inv_trans).astype(np.float32)
+        for idx in range(kp_2d.shape[0]):
+            kp_2d[idx, :, :2] = image_utils.normalize_2d_kp(kp_2d[idx, :, :2])
 
         target = {'raw_imgs': raw_imgs,
                   'norm_imgs': norm_imgs,
@@ -438,8 +440,8 @@ class ClimbingDataset(Dataset):
 
         bboxes = image_utils.get_bbox_from_kp2d(labels)
 
-        self.labels[name] = labels
-        self.bboxes[name] = bboxes
+        self.labels[name] = labels.astype(np.float32)
+        self.bboxes[name] = bboxes.astype(np.float32)
 
     def load_features(self, name):
         features = []
@@ -447,4 +449,4 @@ class ClimbingDataset(Dataset):
             # print(f'Reading features for {name}')
             features = np.load(
                 f'{self.feat_folder}/{name}.npy', allow_pickle=True)
-        self.features[name] = features
+        self.features[name] = features.astype(np.float32)

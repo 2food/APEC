@@ -47,6 +47,12 @@ def trans_points2d(pts_2d, trans):
     return pts_2d
 
 
+def trans_point_seq_2d(pts_seq_2d, transs):
+    for seq in range(pts_seq_2d.shape[0]):
+        pts_seq_2d[seq] = trans_points2d(pts_seq_2d[seq], transs[seq])
+    return pts_seq_2d
+
+
 def rotate_2d(pt_2d, rot_rad):
     x = pt_2d[0]
     y = pt_2d[1]
@@ -295,6 +301,19 @@ def get_single_image_crop_wtrans(image, bbox, kp_2d=None, scale=1.2, crop_size=2
     crop_image = convert_cvimg_to_tensor(crop_image)
 
     return crop_image, raw_image, kp_2d, trans, inv_trans
+
+
+def get_single_kp_crop_wtrans(bbox, kp_2d, scale=1.2, crop_size=224):
+    trans = gen_trans_from_patch_cv(
+        bbox[0], bbox[1], bbox[2], bbox[3], crop_size, crop_size, scale, 0)
+
+    inv_trans = gen_trans_from_patch_cv(
+        bbox[0], bbox[1], bbox[2], bbox[3], crop_size, crop_size, scale, 0, inv=True)
+
+    if kp_2d is not None:
+        for n_jt in range(kp_2d.shape[0]):
+            kp_2d[n_jt, :2] = trans_point2d(kp_2d[n_jt], trans)
+    return kp_2d, trans, inv_trans
 
 
 def read_image(filename):
