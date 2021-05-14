@@ -449,4 +449,5 @@ class ClimbingDataset(Dataset):
             # print(f'Reading features for {name}')
             features = np.load(
                 f'{self.feat_folder}/{name}.npy', allow_pickle=True)
-        self.features[name] = features.astype(np.float32)
+            features = features.astype(np.float32)
+        self.features[name] = features
