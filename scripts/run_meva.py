@@ -13,7 +13,6 @@ import os
 import torch
 import time
 from tqdm import tqdm
-from mesh import render_vids
 import utils
 
 
@@ -108,18 +107,12 @@ def main(args):
 
         joblib.dump(output_dict, os.path.join(out_folder, f"{vid_name}.pkl"))
 
-    if args.render_vids:
-        print('Rendering videos...')
-        render_vids(c, output_dict, out_folder)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--cfg', type=str, help='config file')
     parser.add_argument('--out_folder', type=str, help='output folder')
-    parser.add_argument('--render_vids', action='store_true',
-                        help='whether to render mesh videos')
 
     args = parser.parse_args()
 
