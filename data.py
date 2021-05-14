@@ -317,12 +317,14 @@ class ClimbingDataset(Dataset):
                      for i in range(6)]
         val_seqs = [range((i * 36 + 18) * 30, (i * 36 + 36) * 30)
                     for i in range(6)]
+        testval_seqs = [range(0, (5 * 36 + 36) * 30)]
         train_seqs = all_seqs.copy()
         train_seqs[0] = range(0)
         seq_switch = {'all': all_seqs,
                       'test': test_seqs,
                       'val': val_seqs,
-                      'train': train_seqs
+                      'train': train_seqs,
+                      'testval': testval_seqs
                       }
         self.frames = [np.arange(s.start, s.stop) for s in seq_switch[mode]]
         self.seqs = []
@@ -332,7 +334,7 @@ class ClimbingDataset(Dataset):
             else:
                 self.seqs.append(view_as_windows(
                     f, self.seq_len, step=self.seq_len - self.overlap))
-        if mode in ['test', 'val']:
+        if mode in ['test', 'val', 'testval']:
             self.seqs = [np.concatenate(self.seqs)]
         self.seq_lengths = np.array([s.shape[0] for s in self.seqs])
         self.len = sum(self.seq_lengths)
@@ -404,7 +406,7 @@ class ClimbingDataset(Dataset):
         return target
 
     def get_indices(self, index):
-        if self.mode in ["test", "val"]:
+        if self.mode in ['test', 'val', 'testval']:
             vid_idx = 0
             seq_idx = index
         else:

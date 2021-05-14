@@ -55,6 +55,7 @@ def main(args):
     dataloader = DataLoader(
         c, batch_size=batch_size, num_workers=6, shuffle=False)
 
+    print('Running MEVA ...')
     with torch.no_grad():
         pred_cam, pred_verts, pred_pose, pred_betas, pred_joints3d, norm_joints2d = [
         ], [], [], [], [], []
@@ -82,6 +83,7 @@ def main(args):
         pred_joints3d = torch.cat(pred_joints3d, dim=0)
         norm_joints2d = torch.cat(norm_joints2d, dim=0)
         vid_indices = torch.cat(vid_indices, dim=0)
+    print('Done')
 
     # ========= Save results to a pickle file ========= #
     pred_cam = pred_cam.numpy()
@@ -106,6 +108,7 @@ def main(args):
                        'joints2d': norm_joints2d[inds]}
 
         joblib.dump(output_dict, os.path.join(out_folder, f"{vid_name}.pkl"))
+    print('Done')
 
 
 if __name__ == '__main__':
