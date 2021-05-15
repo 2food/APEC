@@ -19,19 +19,19 @@ import utils
 def main(args):
     out_folder = args.out_folder
     cfg = args.cfg
-
-    utils.makedirs_ifno([out_folder])
-
-    print('Loading climbing data ...')
-    c = data.ClimbingDataset('all', seq_len=90, preload_all=True)
-    print('Done')
-
-    # load pretrained MEVA
-    print('Loading MEVA model ...')
     pretrained_file = f"results/meva/{cfg}/model_best.pth.tar"
     config_file = f"meva/cfg/{cfg}.yml"
     cfg = update_cfg(config_file)
 
+    utils.makedirs_ifno([out_folder])
+
+    print('Loading climbing data ...')
+    c = data.ClimbingDataset(
+        'all', seq_len=cfg.DATASET.SEQLEN, preload_all=True)
+    print('Done')
+
+    # load pretrained MEVA
+    print('Loading MEVA model ...')
     device = torch.device(cfg.DEVICE)
     batch_size = cfg.TRAIN.BATCH_SIZE
 
