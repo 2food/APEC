@@ -354,9 +354,13 @@ class ClimbingDataset(Dataset):
     def __getitem__(self, index):
         if isinstance(index, slice):
             return [self[i] for i in range(index.start or 0, index.stop, index.step or 1)]
-        target = self.get(index, get_imgs=False)
-        target['features'] = torch.Tensor(target['features']).float()
-        target['kp_2d'] = torch.Tensor(target['kp_2d']).float()
+        res = self.get(index, get_imgs=False)
+        if self.mode == 'train':
+            target = {}
+        else:
+            target = res
+        target['features'] = torch.Tensor(res['features']).float()
+        target['kp_2d'] = torch.Tensor(res['kp_2d']).float()
         return target
 
     def get(self, index, get_imgs=True):
