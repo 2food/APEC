@@ -12,14 +12,14 @@ from yacs.config import CfgNode as CN
 
 # CONSTANTS
 # You may modify them at will
-VIBE_DB_DIR = '/hdd/zen/data/video_pose/vibe_db'
-AMASS_DIR = '/home/nsx175/ucph-erda-home/AMASS' # '/media/tormod/Den Lille/Thesis/AMASS'
-INSTA_DIR = '/hdd/zen/data/video_pose/insta_variety'
-MPII3D_DIR = '/hdd/zen/data/video_pose/mpi_inf_3dhp'
+VIBE_DB_DIR = os.path.expanduser('~/ucph-erda-home/vibe_db') # '/media/tormod/Den Lille/Thesis/AMASS'
+AMASS_DIR = os.path.expanduser('~/ucph-erda-home/AMASS')
+INSTA_DIR = VIBE_DB_DIR
+MPII3D_DIR = VIBE_DB_DIR
 H36M_DIR = '/hdd/zen/data/video_pose/h36m/raw_data/'
-THREEDPW_DIR = '/hdd/zen/data/video_pose/3dpw'
+THREEDPW_DIR = VIBE_DB_DIR
 MOVI_DIR = '/hdd/zen/data/video_pose/movi'
-PENNACTION_DIR = '/hdd/zen/data/video_pose/pennaction'
+PENNACTION_DIR = VIBE_DB_DIR
 POSETRACK_DIR = '/hdd/zen/data/video_pose/posetrack'
 SURREAL_DIR = '/hdd/zen/data/video_pose/surreal/SURREAL'
 MEVA_DATA_DIR = 'data/meva_data'

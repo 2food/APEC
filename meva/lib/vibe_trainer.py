@@ -396,6 +396,7 @@ class Trainer():
                 self.evaluation_accumulators[k] = np.vstack(v)
         if self.evaluation_accumulators['pred_j3d']:
             return self.evaluate3d()
+            return self.evaluate2d()
         else:
             return self.evaluate2d()
 

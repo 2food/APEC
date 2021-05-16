@@ -4,7 +4,7 @@ LOGDIR: ''
 DEVICE: 'cuda'
 EXP_NAME: 'meva'
 OUTPUT_DIR: 'results/meva'
-VAE_CFG: "vae_rec_2"
+VAE_CFG: "apec_vae_rec_1"
 NUM_WORKERS: 8
 SEED_VALUE: 2
 LOSS:
@@ -14,34 +14,34 @@ LOSS:
   POSE_W: 60.0
   D_MOTION_LOSS_W: 0.5
 DATASET:
-  SEQLEN: 90
+  SEQLEN: 30
 TRAIN:
   BATCH_SIZE: 32
   NUM_ITERS_PER_EPOCH: 500
-  PRETRAINED: 'results/meva/train_meva_2/model_best.pth.tar'
+  # PRETRAINED: 'results/meva/30-06-2020_13-35-09_meva/model_best.pth.tar'
   # PRETRAINED: 'results/meva/25-08-2020_01-26-40_meva/model_best.pth.tar'
   # PRETRAINED_REGRESSOR: 'data/meva_data/spin_model_checkpoint.pth.tar'
   RESUME: ''
   START_EPOCH: 0
   END_EPOCH: 100
   LR_PATIENCE: 5
-  DATA_2D_RATIO: 1.0
+  DATA_2D_RATIO: 0.6
   DATASETS_2D:
-    - 'Climb'
-  # - 'Insta'
+   - 'Insta'
   #  - 'PoseTrack'
-  # - 'PennAction'
+   - 'PennAction'
+   - 'Climb'
   DATASETS_3D:
-    #- 'ThreeDPW'
-    #- 'MPII3D'
-    #- 'H36M'
+    - 'ThreeDPW'
+    - 'MPII3D'
+    # - 'H36M'
     # - 'MoVi'
     # - 'Surreal'
     # - 'AmassRend'
   # DATASET_EVAL: 'ThreeDPW'
   # DATASET_EVAL: 'MoVi'
   DATASET_EVAL: 'Climb'
-  # DATASET_EVAL: MPII3D'
+  # DATASET_EVAL: 'MPII3D'
   # DATASET_EVAL: 'H36M'
   # DATASET_EVAL: 'AmassRend'
   GEN_LR: 0.00005
