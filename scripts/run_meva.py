@@ -53,7 +53,7 @@ def main(args):
     print('Done')
 
     dataloader = DataLoader(
-        c, batch_size=batch_size, num_workers=6, shuffle=False)
+        c, batch_size=batch_size, shuffle=False)
 
     print('Running MEVA ...')
     with torch.no_grad():
