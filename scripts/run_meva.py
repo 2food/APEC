@@ -33,7 +33,7 @@ def main(args):
     # load pretrained MEVA
     print('Loading MEVA model ...')
     device = torch.device(cfg.DEVICE)
-    batch_size = 6 #cfg.TRAIN.BATCH_SIZE
+    batch_size = cfg.TRAIN.BATCH_SIZE
 
     model = MEVA(
         n_layers=cfg.MODEL.TGRU.NUM_LAYERS,
