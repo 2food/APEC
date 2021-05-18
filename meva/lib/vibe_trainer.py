@@ -394,7 +394,7 @@ class Trainer():
         for k, v in self.evaluation_accumulators.items():
             if v:
                 self.evaluation_accumulators[k] = np.vstack(v)
-        if self.evaluation_accumulators['pred_j3d']:
+        if self.evaluation_accumulators['pred_j3d'] is not None:
             return self.evaluate3d()
             return self.evaluate2d()
         else:

@@ -18,7 +18,7 @@ DATASET:
 TRAIN:
   BATCH_SIZE: 32
   NUM_ITERS_PER_EPOCH: 500
-  # PRETRAINED: 'results/meva/30-06-2020_13-35-09_meva/model_best.pth.tar'
+  PRETRAINED: 'results/meva/train_meva_all_vae30/model_best.pth.tar'
   # PRETRAINED: 'results/meva/25-08-2020_01-26-40_meva/model_best.pth.tar'
   # PRETRAINED_REGRESSOR: 'data/meva_data/spin_model_checkpoint.pth.tar'
   RESUME: ''
