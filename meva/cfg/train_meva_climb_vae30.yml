@@ -27,21 +27,21 @@ TRAIN:
   LR_PATIENCE: 5
   DATA_2D_RATIO: 0.6
   DATASETS_2D:
-   - 'Insta'
+  # - 'Insta'
   #  - 'PoseTrack'
-   - 'PennAction'
-  # - 'Climb'
+  # - 'PennAction'
+   - 'Climb'
   DATASETS_3D:
-    - 'ThreeDPW'
-    - 'MPII3D'
+  #  - 'ThreeDPW'
+  #  - 'MPII3D'
     # - 'H36M'
     # - 'MoVi'
     # - 'Surreal'
     # - 'AmassRend'
   # DATASET_EVAL: 'ThreeDPW'
   # DATASET_EVAL: 'MoVi'
-  # DATASET_EVAL: 'Climb'
-  DATASET_EVAL: 'MPII3D'
+  DATASET_EVAL: 'Climb'
+  # DATASET_EVAL: 'MPII3D'
   # DATASET_EVAL: 'H36M'
   # DATASET_EVAL: 'AmassRend'
   GEN_LR: 0.00005

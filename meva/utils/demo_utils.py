@@ -32,9 +32,11 @@ def preprocess_video(video, joints2d, bboxes, frames, scale=1.0, crop_size=224):
     """
 
     if joints2d is not None:
-        bboxes, time_pt1, time_pt2 = get_all_bbox_params(joints2d, vis_thresh=0.3)
-        bboxes[:,2:] = 150. / bboxes[:,2:]
-        bboxes = np.stack([bboxes[:,0], bboxes[:,1], bboxes[:,2], bboxes[:,2]]).T
+        bboxes, time_pt1, time_pt2 = get_all_bbox_params(
+            joints2d, vis_thresh=0.3)
+        bboxes[:, 2:] = 150. / bboxes[:, 2:]
+        bboxes = np.stack([bboxes[:, 0], bboxes[:, 1],
+                           bboxes[:, 2], bboxes[:, 2]]).T
 
         video = video[time_pt1:time_pt2]
         joints2d = joints2d[time_pt1:time_pt2]
@@ -156,12 +158,12 @@ def convert_crop_cam_to_orig_img(cam, bbox, img_width, img_height):
     :param img_height (int): original image height
     :return:
     '''
-    cx, cy, h = bbox[:,0], bbox[:,1], bbox[:,2]
+    cx, cy, h = bbox[:, 0], bbox[:, 1], bbox[:, 2]
     hw, hh = img_width / 2., img_height / 2.
-    sx = cam[:,0] * (1. / (img_width / h))
-    sy = cam[:,0] * (1. / (img_height / h))
-    tx = ((cx - hw) / hw / sx) + cam[:,1]
-    ty = ((cy - hh) / hh / sy) + cam[:,2]
+    sx = cam[:, 0] * (1. / (img_width / h))
+    sy = cam[:, 0] * (1. / (img_height / h))
+    tx = ((cx - hw) / hw / sx) + cam[:, 1]
+    ty = ((cy - hh) / hh / sy) + cam[:, 2]
     orig_cam = np.stack([sx, sy, tx, ty]).T
     return orig_cam
 
@@ -178,9 +180,10 @@ def prepare_rendering_results(vibe_results, nframes):
     # naive depth ordering based on the scale of the weak perspective camera
     for frame_id, frame_data in enumerate(frame_results):
         # sort based on y-scale of the cam in original image coords
-        sort_idx = np.argsort([v['cam'][1] for k,v in frame_data.items()])
+        sort_idx = np.argsort([v['cam'][1] for k, v in frame_data.items()])
         frame_results[frame_id] = OrderedDict(
-            {list(frame_data.keys())[i]:frame_data[list(frame_data.keys())[i]] for i in sort_idx}
+            {list(frame_data.keys())[i]: frame_data[list(
+                frame_data.keys())[i]] for i in sort_idx}
         )
 
     return frame_results

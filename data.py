@@ -317,6 +317,7 @@ class ClimbingDataset(Dataset):
         self.vids = load_vids(video_folder)
 
         self.labels = {}
+        self.hand_labels = {}
         self.bboxes = {}
         self.features = {}
 
@@ -406,11 +407,15 @@ class ClimbingDataset(Dataset):
         for idx in range(kp_2d.shape[0]):
             kp_2d[idx, :, :2] = image_utils.normalize_2d_kp(kp_2d[idx, :, :2])
 
+        kp_2d_extra = self.hand_labels[name][frames] if self.mode in [
+            'test', 'val', 'testval'] else []
+
         target = {'raw_imgs': raw_imgs,
                   'norm_imgs': norm_imgs,
                   'features': features,
                   'raw_kp_2d': labels,
                   'kp_2d': kp_2d,
+                  'kp_2d_extra': kp_2d_extra,
                   'vid_idx': vid_idx,
                   'frames': frame_range,
                   'bboxes': bboxes,
@@ -445,6 +450,7 @@ class ClimbingDataset(Dataset):
             # add confidence of 1
             hand_labels = np.concatenate(
                 (hand_labels, np.ones((hand_labels.shape[0], 19, 1))), axis=2)
+            self.hand_labels[name] = hand_labels.copy()
             hand_labels = kp_utils.convert_kps(hand_labels, 'climb', 'spin')
             annotated_frames = hand_annotated[name]
             labels[annotated_frames] = hand_labels[annotated_frames]
