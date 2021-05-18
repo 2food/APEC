@@ -279,6 +279,16 @@ hand_annotated = {'IMG_2139': slice(0, 6859),
                   'VID_20210123_111921': slice(30 * 108, 30 * 120)}
 
 
+def load_vids(video_folder):
+    vids = []
+    for n in video_names:
+        vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+        while len(vid) < 1:  # ensure it's actually read right
+            vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+        vids.append(vid)
+    return vids
+
+
 class ClimbingDataset(Dataset):
     # look at MEVA/meva/dataloaders/dataset_2d.py for inspo
 
@@ -304,8 +314,7 @@ class ClimbingDataset(Dataset):
         self.seq_len = seq_len
         self.overlap = overlap
 
-        self.vids = [mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
-                     for n in video_names]
+        self.vids = load_vids(video_folder)
 
         self.labels = {}
         self.bboxes = {}
