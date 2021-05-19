@@ -75,3 +75,35 @@ def oks_extra(pred_j2d, target_j2d, scales, inv_trans):
     d = np.linalg.norm(pred_j2d[:, :, :2] - target_j2d[:, :, :2], axis=2)
 
     return np.exp(-d / (2 * s2 * k2))
+
+
+def speed(joints):
+    return np.gradient(joints, axis=0)
+
+
+def acceleration(joints):
+    return np.gradient(speed(joints), axis=0)
+
+
+def acc_error(pred_joints, target_joints, scales, inv_trans):
+    pred_joints = image_utils.normalize_2d_kp(pred_joints, inv=True)
+    pred_joints = image_utils.trans_point_seq_2d(pred_joints, inv_trans)
+    pred_joints = kp_utils.convert_kps(pred_joints, 'spin', 'coco')
+    target_joints = image_utils.normalize_2d_kp(target_joints, inv=True)
+    target_joints = image_utils.trans_point_seq_2d(target_joints, inv_trans)
+    target_joints = kp_utils.convert_kps(target_joints, 'spin', 'coco')
+    pa = acceleration(pred_joints[:, :, :2])
+    ta = acceleration(target_joints[:, :, :2])
+    pa = np.abs(pa[:, :, 0]) + np.abs(pa[:, :, 1])
+    ta = np.abs(ta[:, :, 0]) + np.abs(ta[:, :, 1])
+    return (pa - ta) / scales[:, np.newaxis]
+
+
+def acc_error_extra(pred_joints, target_joints, scales, inv_trans):
+    pred_joints = image_utils.normalize_2d_kp(pred_joints, inv=True)
+    pred_joints = image_utils.trans_point_seq_2d(pred_joints, inv_trans)
+    pa = acceleration(pred_joints[:, :, :2])
+    ta = acceleration(target_joints[:, :, :2])
+    pa = np.abs(pa[:, :, 0]) + np.abs(pa[:, :, 1])
+    ta = np.abs(ta[:, :, 0]) + np.abs(ta[:, :, 1])
+    return (pa - ta) / scales[:, np.newaxis]
