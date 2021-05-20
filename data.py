@@ -283,8 +283,8 @@ def load_vids(video_folder):
     vids = []
     for n in video_names:
         vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
-        while len(vid) < 1:  # ensure it's actually read right
-            vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+        # while len(vid) < 1:  # ensure it's actually read right
+        #     vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
         vids.append(vid)
     return vids
 
@@ -328,7 +328,7 @@ class ClimbingDataset(Dataset):
         val_seqs = [range((i * 36 + 18) * 30, (i * 36 + 36) * 30)
                     for i in range(6)]
         testval_seqs = [range(0, (5 * 36 + 36) * 30)]
-        train_seqs = all_seqs.copy()
+        train_seqs = all_seqs[:3].copy()
         train_seqs[0] = range(0)
         seq_switch = {'all': all_seqs,
                       'test': test_seqs,
@@ -423,7 +423,7 @@ class ClimbingDataset(Dataset):
                   'inv_trans': inv_trans}
         return target
 
-    def get_indices(self, index):
+    def get_indices(self, index, vid_seq=False):
         if self.mode in ['test', 'val', 'testval']:
             vid_idx = 0
             seq_idx = index
@@ -432,7 +432,10 @@ class ClimbingDataset(Dataset):
             seq_idx = index - self.seq_lengths[:vid_idx].sum()
         seq = self.seqs[vid_idx][seq_idx]
         frames = slice(seq[0], seq[-1] + 1)
-        return vid_idx, frames
+        if vid_seq:
+            return vid_idx, frames, seq_idx
+        else:
+            return vid_idx, frames
 
     def load_labels(self, name):
         # print(f'Reading labels for {name}')

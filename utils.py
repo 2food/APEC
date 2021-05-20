@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import shutil
 from meva.utils import image_utils, kp_utils
+from meva.lib.smpl import SMPL, SMPL_MODEL_DIR
+from meva.lib import meva_model
+from smplx.lbs import vertices2joints
+import torch
 
 
 def makedirs_ifno(paths):
@@ -107,3 +111,16 @@ def acc_error_extra(pred_joints, target_joints, scales, inv_trans):
     pa = np.abs(pa[:, :, 0]) + np.abs(pa[:, :, 1])
     ta = np.abs(ta[:, :, 0]) + np.abs(ta[:, :, 1])
     return (pa - ta) / scales[:, np.newaxis]
+
+
+smpl = SMPL(SMPL_MODEL_DIR,
+            batch_size=64,
+            create_transl=False)
+smpl_feet_and_hands = [11, 10, 23, 22]
+climb_feet_and_hands = [12, 16, 4, 8]
+
+
+def get_extra_joints(verts, pred_cam):
+    smpl_joints = vertices2joints(smpl.J_regressor, torch.Tensor(verts))
+    joints2d = meva_model.projection(smpl_joints, torch.Tensor(pred_cam))
+    return joints2d.numpy()[:, smpl_feet_and_hands, :]
