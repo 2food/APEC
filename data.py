@@ -471,8 +471,7 @@ class ClimbingDataset(Dataset):
         vids = []
         vn = video_names
         if self.mode in ['test', 'val', 'testval']:
-            vn = video_names[1:]
-            vids.append([])
+            vn = video_names[:1]
         for n in vn:
             vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
             while len(vid) < 1:  # ensure it's actually read right

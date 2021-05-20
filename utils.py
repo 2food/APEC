@@ -29,6 +29,7 @@ def imshowt(inp, title=None):
 
 def imshownp(inp, title=None, savename=None, bgr=False):
     """Imshow for ndarray."""
+    assert isinstance(inp, np.ndarray)
     ax = plt.axes()
     img = inp
     if bgr:
