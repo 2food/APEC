@@ -10,6 +10,7 @@ import numpy as np
 from skimage.util import view_as_windows
 from meva.utils import image_utils, kp_utils
 from tqdm.auto import tqdm, trange
+import time
 
 
 class VideoFrameFolder(ImageFolder):
