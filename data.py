@@ -328,7 +328,7 @@ class ClimbingDataset(Dataset):
         val_seqs = [range((i * 36 + 18) * 30, (i * 36 + 36) * 30)
                     for i in range(6)]
         testval_seqs = [range(0, (5 * 36 + 36) * 30)]
-        train_seqs = all_seqs[:3].copy()
+        train_seqs = all_seqs.copy()
         train_seqs[0] = range(0)
         seq_switch = {'all': all_seqs,
                       'test': test_seqs,
