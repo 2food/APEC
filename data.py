@@ -283,8 +283,9 @@ def load_vids(video_folder):
     vids = []
     for n in video_names:
         vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
-        # while len(vid) < 1:  # ensure it's actually read right
-        #     vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+        while len(vid) < 1:  # ensure it's actually read right
+            vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+            time.sleep(1)
         vids.append(vid)
     return vids
 
