@@ -280,17 +280,6 @@ hand_annotated = {'IMG_2139': slice(0, 6859),
                   'VID_20210123_111921': slice(30 * 108, 30 * 120)}
 
 
-def load_vids(video_folder):
-    vids = []
-    for n in video_names:
-        vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
-        while len(vid) < 1:  # ensure it's actually read right
-            vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
-            time.sleep(1)
-        vids.append(vid)
-    return vids
-
-
 class ClimbingDataset(Dataset):
     # look at MEVA/meva/dataloaders/dataset_2d.py for inspo
 
@@ -477,3 +466,18 @@ class ClimbingDataset(Dataset):
                 f'{self.feat_folder}/{name}.npy', allow_pickle=True)
             features = features.astype(np.float32)
         self.features[name] = features
+
+    def load_vids(self, video_folder):
+        vids = []
+        vn = video_names
+        if self.mode in ['test', 'val', 'testval']:
+            vn = video_names[1:]
+            vids.append([])
+        for n in vn:
+            vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+            while len(vid) < 1:  # ensure it's actually read right
+                vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
+                print(f'Can\'t read {n}, retrying...')
+                time.sleep(1)
+            vids.append(vid)
+        return vids
