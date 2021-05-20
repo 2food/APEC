@@ -305,7 +305,7 @@ class ClimbingDataset(Dataset):
         self.seq_len = seq_len
         self.overlap = overlap
 
-        self.vids = load_vids(video_folder)
+        self.vids = self.load_vids(video_folder)
 
         self.labels = {}
         self.hand_labels = {}
