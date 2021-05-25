@@ -45,7 +45,7 @@ if __name__ == "__main__":
     #     if torch.cuda.is_available()
     #     else torch.device("cpu")
     # )
-    device = 'cpu'
+    device = 'cuda'
 
     smpl = SMPL(
         SMPL_MODEL_DIR,
