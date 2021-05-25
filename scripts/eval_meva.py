@@ -83,7 +83,7 @@ if __name__ == "__main__":
     t_total = 30
     overlap = 10
     dataset_data = joblib.load(
-        "/home/tormod/ucph-erda-home/vibe_db/3dpw_test_db.pt")
+        os.expanduser("~/ucph-erda-home/vibe_db/3dpw_test_db.pt"))
     # dataset_data = joblib.load("/hdd/zen/data/video_pose/vibe_db/h36m_test_db.pt")
     # dataset_data = joblib.load("/hdd/zen/data/video_pose/vibe_db/mpii3d_test_db.pt")
     out_dir = "3dpw/meva_res/res"
