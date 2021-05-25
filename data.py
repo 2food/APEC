@@ -312,7 +312,7 @@ class ClimbingDataset(Dataset):
         self.bboxes = {}
         self.features = {}
 
-        # sometimes it fails to read the last frame
+        # -1 because sometimes it fails to read the last frame
         all_seqs = [range(len(v) - 1) for v in self.vids]
         test_seqs = [range((i * 36) * 30, (i * 36 + 18) * 30)
                      for i in range(6)]
@@ -475,8 +475,8 @@ class ClimbingDataset(Dataset):
         for n in vn:
             vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
             while len(vid) < 1:  # ensure it's actually read right
-                vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
                 print(f'Can\'t read {n}, retrying...')
+                vid = mmcv.VideoReader(f'{video_folder}/{n}', cache_capacity=1)
                 time.sleep(1)
             vids.append(vid)
         return vids

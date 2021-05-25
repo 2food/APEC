@@ -19,6 +19,7 @@ def makedirs_ifno(paths):
 
 def imshowt(inp, title=None):
     """Imshow for Tensor."""
+    assert isinstance(inp, torch.tensor)
     inp = torchvision.transforms.functional.to_pil_image(inp)
     plt.imshow(inp)
     plt.axis('off')
