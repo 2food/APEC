@@ -19,6 +19,7 @@ import utils
 def main(args):
     out_folder = args.out_folder
     cfg = args.cfg
+    overlap = args.overlap
     pretrained_file = f"results/meva/{cfg}/model_best.pth.tar"
     config_file = f"meva/cfg/{cfg}.yml"
     cfg = update_cfg(config_file)
@@ -27,7 +28,7 @@ def main(args):
 
     print('Loading climbing data ...')
     c = data.ClimbingDataset(
-        'all', seq_len=cfg.DATASET.SEQLEN, preload_all=True)
+        'all', seq_len=cfg.DATASET.SEQLEN, overlap=overlap, preload_all=True)
     print('Done')
 
     # load pretrained MEVA
@@ -116,6 +117,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--cfg', type=str, help='config file')
     parser.add_argument('--out_folder', type=str, help='output folder')
+    parser.add_argument('--overlap', type=int, help='overlap frames')
 
     args = parser.parse_args()
 
